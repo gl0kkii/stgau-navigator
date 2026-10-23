@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Навигатор СтГАУ</title>
+    <!-- Telegram WebApp JS -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-main: #090a0f;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.65);
+            --text-tertiary: rgba(255, 255, 255, 0.4);
+
+            --glass-base: rgba(255, 255, 255, 0.05);
+            --glass-hover: rgba(255, 255, 255, 0.09);
+            --glass-active: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.14);
+            --glass-border-glow: rgba(255, 255, 255, 0.4);
+            
+            --glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 
+                            inset 0 1px 1px rgba(255, 255, 255, 0.25);
+            
+            --sat: env(safe-area-inset-top, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: calc(24px + var(--sat)) 16px calc(24px + var(--sab)) 16px;
+            overflow-x: hidden;
+            perspective: 1200px;
+        }
+
+        /* Фоновые пузыри + Логотип СтГАУ */
+        .ambient-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 10%, #161922 0%, #090a0f 80%);
+            pointer-events: none;
+        }
+
+        .stgau-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 380px;
+            height: 380px;
+            background: url('medium_5640be1de6cd7239f030874b38c45060.jpg') no-repeat center center;
+            background-size: contain;
+            opacity: 0.04;
+            filter: grayscale(100%) contrast(150%) blur(1px);
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(65px);
+            opacity: 0.28;
+            will-change: transform;
+        }
+
+        .bubble-1 { width: 280px; height: 280px; background: #ffffff; top: 5%; left: -10%; animation: floatChaotic1 22s infinite ease-in-out; }
+        .bubble-2 { width: 340px; height: 340px; background: #8e8e93; bottom: -5%; right: -15%; animation: floatChaotic2 28s infinite ease-in-out; }
+        .bubble-3 { width: 220px; height: 220px; background: #aeaeb2; top: 40%; left: 30%; animation: floatChaotic3 19s infinite ease-in-out; }
+
+        @keyframes floatChaotic1 {
+            0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+            50% { transform: translate3d(-40px, 140px, 0) scale(0.9) rotate(90deg); }
+            100% { transform: translate3d(0, 0, 0) scale(1) rotate(180deg); }
+        }
+
+        @keyframes floatChaotic2 {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            50% { transform: translate3d(-30px, -150px, 0) scale(0.85); }
+            100% { transform: translate3d(0, 0, 0) scale(1); }
+        }
+
+        @keyframes floatChaotic3 {
+            0% { transform: translate3d(0, 0, 0) scale(0.9); }
+            50% { transform: translate3d(-70px, 90px, 0) scale(1.25); }
+            100% { transform: translate3d(0, 0, 0) scale(0.9); }
+        }
+
+        /* -------------------------------------------------------------
+           ОБНОВЛЕННЫЙ КРУПНЫЙ И ЧЕТКИЙ ЗАГОЛОВОК APPLE
+        ------------------------------------------------------------- */
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+            padding: 0 8px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 8px;
+            color: #ffffff;
+            background: linear-gradient(180deg, #ffffff 40%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+        }
+
+        .header p {
+            font-size: 15px;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            color: var(--text-secondary);
+        }
+
+        /* Поиск */
+        .search-wrapper { position: relative; z-index: 100; margin-bottom: 20px; }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+            height: 54px;
+            background: var(--glass-base);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            cursor: pointer;
+            transition: border-color 0.8s cubic-bezier(0.16, 1, 0.3, 1), background 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-icon { font-size: 16px; margin-right: 12px; opacity: 0.6; }
+        .search-input { width: 100%; height: 100%; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 16px; font-weight: 400; }
+        .search-input::placeholder { color: var(--text-tertiary); }
+
+        .close-btn {
+            opacity: 0;
+            transform: scale(0.5) rotate(-90deg);
+            pointer-events: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 8px;
+            flex-shrink: 0;
+            transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-wrapper.fullscreen .search-box {
+            border-color: var(--glass-border-glow);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-wrapper.fullscreen .close-btn {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            pointer-events: auto;
+        }
+
+        .suggestions-overlay {
+            position: absolute;
+            top: 62px;
+            left: 0;
+            width: 100%;
+            max-height: calc(100vh - 200px);
+            background: rgba(12, 14, 20, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border-glow);
+            border-radius: 26px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            padding: 20px 16px;
+            overflow-y: auto;
+            opacity: 0;
+            pointer-events: none;
+            transform: scaleY(0) scaleX(0.85);
+            transform-origin: top center;
+            transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .search-wrapper.fullscreen .suggestions-overlay {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scaleY(1) scaleX(1);
+        }
+
+        /* Главная сетка */
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+
+        .glass-card {
+            background: var(--glass-base);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 22px;
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            box-shadow: var(--glass-shadow);
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease, background 0.4s ease, opacity 0.4s ease, width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-card:active { transform: perspective(1000px) scale(0.95) !important; background: var(--glass-active); border-color: #ffffff; }
+        .glass-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: #ffffff; }
+        .glass-card p { font-size: 12px; color: var(--text-secondary); }
+
+        /* Контентная зона */
+        .content-layout {
+            display: flex;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-display {
+            flex: 1;
+            background: var(--glass-base);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: var(--glass-shadow);
+            min-height: 220px;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .info-route-panel {
+            width: 0;
+            opacity: 0;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 0;
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+        }
+
+        .content-layout.active-details .info-route-panel {
+            width: 55%;
+            opacity: 1;
+            padding: 18px;
+        }
+
+        .content-layout.active-details .content-display {
+            flex: 45%;
+        }
+
+        .room-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .room-card:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.1); }
+        .room-info h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+        .room-info .room-loc { font-size: 12px; color: #a1a1aa; margin-bottom: 2px; }
+        .room-info .room-desc { font-size: 11px; color: var(--text-secondary); }
+
+        /* Кнопка "Оптимизация" */
+        .optimize-btn {
+            position: fixed;
+            bottom: max(16px, env(safe-area-inset-bottom, 16px));
+            left: 16px;
+            z-index: 1000;
+            background: var(--glass-base);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: var(--glass-shadow);
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.3s ease, border-color 0.3s ease;
+        }
+
+        .optimize-btn:active {
+            transform: scale(0.92);
+            background: var(--glass-active);
+            border-color: #fff;
+        }
+
+        body.optimized *, body.optimized *::before, body.optimized *::after {
+            animation: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            transition: none !important;
+        }
+        body.optimized .ambient-background { background: #090a0f !important; }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-background">
+        <div class="stgau-watermark"></div>
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+    </div>
+
+    <!-- Обновленный выразительный заголовок -->
+    <div class="header">
+        <h1>Навигатор СтГАУ</h1>
+        <p>Интерактивная система кампуса</p>
+    </div>
+
+    <div class="search-wrapper" id="searchWrapper">
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Поиск (номер, деканат, кафедра)..." autocomplete="off">
+            <button class="close-btn" onclick="closeFullscreenSearch(event)">✕</button>
+        </div>
+
+        <div class="suggestions-overlay">
+            <div id="searchResultsList"></div>
+        </div>
+    </div>
+
+    <div class="grid-container">
+        <div class="glass-card" data-tilt onclick="selectCorpus('main')">
+            <h3>🏛 Главный</h3>
+            <p>Зоотехнический, 12</p>
+        </div>
+        <div class="glass-card" data-tilt onclick="selectCorpus('eng')">
+            <h3>⚙ Инженерный</h3>
+            <p>ул. Мира, 347</p>
+        </div>
+        <div class="glass-card" data-tilt onclick="selectCorpus('vet')">
+            <h3>🔬 Ветмедицина</h3>
+            <p>ул. Мира, 346</p>
+        </div>
+        <div class="glass-card" data-tilt onclick="selectCorpus('food')">
+            <h3>☕ Столовые</h3>
+            <p>Точки питания</p>
+        </div>
+    </div>
+
+    <div class="content-layout" id="contentLayout">
+        <div class="info-route-panel" id="infoRoutePanel">
+            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #fff;">🧭 Маршрут и Инфо</h4>
+            <div id="routeContent" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;"></div>
+        </div>
+        <div class="content-display" id="contentArea">
+            <p style="text-align: center; color: var(--text-secondary); font-size: 13px; padding-top: 50px;">
+                Выберите вкладку или корпус для построения маршрута
+            </p>
+        </div>
+    </div>
+
+    <button class="optimize-btn" onclick="toggleOptimization()">Оптимизация</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const roomsDatabase = [
+            { id: "1", corpus: "main", corpusName: "Главный корпус (Зоотехнический, 12)", title: "Ректорат и Приемная комиссия", location: "1 этаж, каб. 115", desc: "Центральный вход, левое крыло.", route: "От главного входа поверните налево, пройдите 15 метров до холла административного крыла." },
+            { id: "2", corpus: "main", corpusName: "Главный корпус (Зоотехнический, 12)", title: "Биотехнологический факультет", location: "2 этаж, каб. 210", desc: "Деканат факультета, центральная лестница.", route: "Поднимитесь по центральной лестнице на второй этаж, поверните направо." },
+            { id: "3", corpus: "eng", corpusName: "Инженерный корпус (ул. Мира, 347)", title: "Деканат инженерного факультета", location: "1 этаж, каб. 104", desc: "Главный холл инженерного корпуса.", route: "Вход через центральные двери корпуса, кабинет расположен сразу справа от охраны." },
+            { id: "4", corpus: "eng", corpusName: "Инженерный корпус (ул. Мира, 347)", title: "Аудитория им. А.Г. Нестеренко", location: "3 этаж, каб. 312", desc: "Большая лекционная аудитория.", route: "Поднимитесь на лифте или лестнице на 3 этаж, двигайтесь по указателям лекториев." },
+            { id: "5", corpus: "vet", corpusName: "Факультет ветмедицины (ул. Мира, 346)", title: "Учебная ветеринарная клиника", location: "Корпус 6, 1 этаж", desc: "Инновационный диагностический центр.", route: "Пройдите через внутренний двор к корпусу №6, вход с торцевой части здания." },
+            { id: "6", corpus: "food", corpusName: "Точки питания СтГАУ", title: "Студенческая столовая №1", location: "Главный корпус, 1 этаж", desc: "Горячие обеды, выпечка и кофейная зона.", route: "От главного входа двигайтесь по правому коридору до указателя обеденной зоны." }
+        ];
+
+        function toggleOptimization() {
+            playSound(350, 200);
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            document.body.classList.toggle('optimized');
+        }
+
+        document.querySelectorAll('[data-tilt]').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                if(document.body.classList.contains('optimized')) return;
+                const rect = card.getBoundingClientRect();
+                const xc = rect.width / 2;
+                const yc = rect.height / 2;
+                const dx = (e.clientX - rect.left - xc) / xc;
+                const dy = (e.clientY - rect.top - yc) / yc;
+                card.style.transform = `perspective(1000px) rotateX(${-dy * 10}deg) rotateY(${dx * 10}deg) scale(1.02)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+            });
+        });
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioContext;
+        function initAudio() { if (!audioContext) audioContext = new AudioCtx(); }
+
+        function playSound(freqStart, freqEnd) {
+            if(document.body.classList.contains('optimized')) return;
+            initAudio();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freqStart, audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(freqEnd, audioContext.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.06, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+            osc.connect(gain); gain.connect(audioContext.destination);
+            osc.start(); osc.stop(audioContext.currentTime + 0.05);
+        }
+
+        const searchWrapper = document.getElementById('searchWrapper');
+        const searchInput = document.getElementById('searchInput');
+        const searchResultsList = document.getElementById('searchResultsList');
+
+        searchInput.addEventListener('focus', () => {
+            playSound(300, 500);
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            searchWrapper.classList.add('fullscreen');
+            renderSearchResults(searchInput.value);
+        });
+
+        function closeFullscreenSearch(e) {
+            if (e) e.stopPropagation();
+            playSound(400, 200);
+            searchWrapper.classList.remove('fullscreen');
+            searchInput.value = '';
+            searchInput.blur();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            renderSearchResults(e.target.value);
+        });
+
+        function renderSearchResults(query) {
+            const q = query.trim().toLowerCase();
+            let filtered = roomsDatabase;
+            if (q.length > 0) {
+                filtered = roomsDatabase.filter(item => 
+                    item.title.toLowerCase().includes(q) ||
+                    item.location.toLowerCase().includes(q) ||
+                    item.corpusName.toLowerCase().includes(q) ||
+                    item.desc.toLowerCase().includes(q)
+                );
+            }
+
+            if (filtered.length === 0) {
+                searchResultsList.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 14px;">Ничего не найдено по запросу «<b>${query}</b>»</p>`;
+                return;
+            }
+
+            searchResultsList.innerHTML = `
+                <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">${q.length > 0 ? 'Результаты поиска' : 'Рекомендуемые помещения'}</p>
+                ${filtered.map(room => `
+                    <div class="room-card" onclick="selectRoom('${room.id}')">
+                        <div class="room-info">
+                            <h4>${room.title}</h4>
+                            <div class="room-loc">📍 <b>${room.location}</b></div>
+                            <div class="room-desc">${room.corpusName}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function selectRoom(id) {
+            playSound(320, 100);
+            const room = roomsDatabase.find(r => r.id === id);
+            closeFullscreenSearch();
+            showDetails(room);
+        }
+
+        function selectCorpus(key) {
+            playSound(320, 80);
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+            const filtered = roomsDatabase.filter(r => r.corpus === key);
+            const content = document.getElementById('contentArea');
+            const layout = document.getElementById('contentLayout');
+            
+            layout.classList.remove('active-details');
+
+            content.style.opacity = '0';
+            setTimeout(() => {
+                content.innerHTML = filtered.map(room => `
+                    <div class="room-card" onclick="selectRoom('${room.id}')">
+                        <div class="room-info">
+                            <h4>${room.title}</h4>
+                            <div class="room-loc">📍 <b>${room.location}</b></div>
+                            <div class="room-desc">${room.desc}</div>
+                        </div>
+                    </div>
+                `).join('');
+                content.style.opacity = '1';
+            }, 200);
+        }
+
+        function showDetails(room) {
+            const content = document.getElementById('contentArea');
+            const layout = document.getElementById('contentLayout');
+            const routeContent = document.getElementById('routeContent');
+
+            layout.classList.add('active-details');
+
+            routeContent.innerHTML = `
+                <p style="margin-bottom: 6px;"><b>Объект:</b> ${room.title}</p>
+                <p style="margin-bottom: 6px;"><b>Расположение:</b> ${room.location}</p>
+                <p style="color: #fff; margin-top: 8px;"><b>Как пройти:</b> ${room.route}</p>
+            `;
+
+            content.style.opacity = '0';
+            setTimeout(() => {
+                content.innerHTML = `
+                    <div class="room-info" style="text-align: left;">
+                        <h4 style="font-size: 16px; margin-bottom: 6px;">${room.title}</h4>
+                        <div class="room-loc" style="font-size: 13px; margin-bottom: 4px;">📍 <b>${room.location}</b></div>
+                        <div class="room-loc" style="font-size: 12px; color: #fff; margin-bottom: 6px;">${room.corpusName}</div>
+                        <div class="room-desc" style="font-size: 12px; line-height: 1.4;">${room.desc}</div>
+                    </div>
+                `;
+                content.style.opacity = '1';
+            }, 250);
+        }
+    </script>
+</body>
+</html>
