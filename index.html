@@ -597,6 +597,26 @@
             animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
         }
         .plus-card[hidden] { display: none; }
+/* Меню «Расписание»: быстрые кнопки, недели, пары */
+.quick-bar { display: flex; gap: 8px; margin-bottom: 10px; opacity: 0; animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards; }
+.quick-btn {
+    flex: 1 1 0; height: 40px; border-radius: 14px; cursor: pointer;
+    border: 1px solid var(--glass-border); background: var(--glass-base); color: #fff;
+    font: inherit; font-size: 14px; font-weight: 600; box-shadow: var(--glass-shadow);
+    transition: transform 0.35s var(--ios-spring), background 0.2s ease;
+}
+.quick-btn:active { transform: scale(0.95); background: var(--glass-active); }
+.week-tabs { display: flex; gap: 4px; padding: 3px; margin: -6px 0 18px; border-radius: 12px; background: var(--ios-fill); }
+.week-tab { flex: 1; height: 32px; border: none; border-radius: 9px; background: transparent; color: var(--ios-label-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.week-tab.on { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.today-badge { margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: #fff; color: var(--bg-main); font-size: 10px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.lesson-row.is-link { cursor: pointer; }
+.lesson-row.is-link:active { background: var(--glass-active); }
+.lesson-row.is-live { box-shadow: inset 3px 0 0 #30d158; }
+.lesson-row .lesson-day { flex-basis: 48px; }
+.lesson-main small + small { margin-top: 1px; }
+.lesson-kind { font-style: normal; padding: 0 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 11px; }
+.lesson-kind.is-change { background: rgba(255, 214, 10, 0.2); color: var(--ios-yellow); }
 
         /* Маршрут пешком, «поесть рядом», статус столовой, поделиться */
         .route-btn { width: 100%; margin-top: 10px; background: #fff; color: var(--bg-main); border-color: transparent; }
@@ -725,9 +745,6 @@
         .lesson-main { flex: 1; font-size: 14px; font-weight: 600; min-width: 0; }
         .lesson-main[data-act] { cursor: pointer; }
         .lesson-main small { display: block; font-size: 12px; font-weight: 400; color: var(--ios-label-2); margin-top: 2px; }
-        .lesson-del { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--ios-fill); color: #fff; cursor: pointer; }
-        .lesson-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
-        .lesson-form .lf-wide { grid-column: 1 / -1; }
 
         /* =====================================================================
            ANDROID: тот же вид, что на iOS, но без лагов (класс .android ставит скрипт)
@@ -743,6 +760,7 @@
         .android .content-display,
         .android .info-route-panel,
         .android .plus-card,
+        .android .quick-btn,
         .android .optimize-btn,
         .android .suggestions-overlay {
             backdrop-filter: none;
@@ -781,6 +799,11 @@
         </div>
     </div>
 
+    <div class="quick-bar" id="quickBar">
+        <button class="quick-btn" data-act="rasp">📅 Расписание</button>
+        <button class="quick-btn" data-act="open">⭐ Студент+</button>
+    </div>
+
     <div class="plus-card" id="plusCard" hidden></div>
 
     <div class="grid-container units" id="unitGrid"></div>
@@ -802,7 +825,7 @@
     <div class="plus-sheet" id="plusSheet" aria-hidden="true">
         <div class="plus-sheet-inner">
             <div class="plus-sheet-head">
-                <h2>Студент+</h2>
+                <h2 id="sheetTitle">Студент+</h2>
                 <button class="close-btn plus-close" data-act="close" aria-label="Закрыть">✕</button>
             </div>
             <div id="plusBody"></div>
@@ -1756,9 +1779,6 @@
         const PLUS_API = 'https://stgau-bot.vkyyfwr6w6.workers.dev';
         const BOT_LINK = 'https://t.me/stgau_navigation_bot';
         const DAY_MS = 86400000;
-        const DAYS_SHORT = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-        const DAYS_FULL = ['', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
-        const WEEK_LABEL = { all: 'каждую неделю', num: 'числитель', den: 'знаменатель' };
         const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
         const plusCard = document.getElementById('plusCard');
@@ -1768,7 +1788,6 @@
 
         let plusState = null;     // ответ сервера /api/me
         let plusError = null;
-        let scheduleDraft = null; // расписание, которое староста сейчас редактирует
 
         async function plusApi(path, body) {
             // При урезанном интернете запрос может висеть бесконечно — обрываем через 8 секунд
@@ -1821,45 +1840,81 @@
             if (isPlusOpen) renderPlusSheet();
         }
 
-        /* ---------- Время и расписание (по Москве, как на сервере) ---------- */
+        /* ---------- Расписание группы: берётся с сайта СтГАУ (ЭИОС) через наш сервер ---------- */
 
         const tzOff = () => (plusState ? plusState.tzOffsetMin : 180) * 60000;
         const mskDate = (ts) => new Date(ts + tzOff());
-        const isoDowAt = (ts) => ((mskDate(ts).getUTCDay() + 6) % 7) + 1;
-        const fmtDay = (ts) => { const d = mskDate(ts); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
-
-        function weekTypeAt(ts) {
+        const FOREVER_TS = Date.UTC(2100, 0, 1);
+        const fmtDay = (ts) => {
+            if (ts >= FOREVER_TS) return 'бессрочно';
             const d = mskDate(ts);
-            const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - (isoDowAt(ts) - 1) * DAY_MS;
-            const anchor = Date.parse((plusState ? plusState.numeratorMonday : '2026-08-31') + 'T00:00:00Z');
-            const weeks = Math.round((monday - anchor) / (7 * DAY_MS));
-            return ((weeks % 2) + 2) % 2 === 0 ? 'num' : 'den';
+            return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+        };
+        const WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+        const WEEKDAYS_IN = ['воскресенье', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
+        const lessonTs = (l, field = 'start') => Date.parse(`${l.date}T${l[field]}:00+03:00`);
+        const todayKey = () => mskDate(Date.now()).toISOString().slice(0, 10);
+
+        let raspWeeks = {};      // 0 — эта неделя, 1 — следующая: { monday, lessons, updated, stale, error }
+        let raspOffset = 0;
+        let raspLoading = false;
+        let groupDir = null;     // справочник групп для подсказок: [[номер, название], …]
+        let sheetMode = 'plus';  // какое окно открыто: 'plus' или 'rasp'
+
+        const raspCacheKey = () => plusCacheKey() + '-rasp';
+        function saveRaspCache() {
+            try { localStorage.setItem(raspCacheKey(), JSON.stringify(raspWeeks)); } catch (err) { /* хранилище недоступно */ }
+        }
+        function readRaspCache() {
+            try { return JSON.parse(localStorage.getItem(raspCacheKey()) || 'null'); } catch (err) { return null; }
         }
 
-        // Ближайшая пара: сегодняшняя, если началась не больше 10 минут назад, иначе следующая
-        function findNextLesson(schedule) {
-            const now = Date.now();
-            for (let i = 0; i < 8; i++) {
-                const dayTs = now + i * DAY_MS;
-                const dow = isoDowAt(dayTs);
-                if (dow === 7) continue;
-                const wt = weekTypeAt(dayTs);
-                const d = mskDate(dayTs);
-                for (const l of schedule) {
-                    if (l.d !== dow || (l.w !== 'all' && l.w !== wt)) continue;
-                    const [h, m] = l.t.split(':').map(Number);
-                    const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m) - tzOff();
-                    if (start > now - 10 * 60000) return { lesson: l, start, dayOffset: i, dow };
-                }
+        async function loadRasp(offset) {
+            if (!inTelegram || !plusState || !plusState.group) return;
+            try {
+                raspWeeks[offset] = await plusApi('/api/rasp?week=' + offset);
+                saveRaspCache();
+            } catch (err) {
+                const cached = readRaspCache();
+                if (cached && cached[offset]) raspWeeks[offset] = { ...cached[offset], stale: true };
+                else if (!raspWeeks[offset]) raspWeeks[offset] = { lessons: [], error: err.message };
             }
-            return null;
         }
 
-        function whenLabel(next) {
-            if (next.start <= Date.now()) return `Идёт с ${next.lesson.t}`;
-            if (next.dayOffset === 0) return `Сегодня в ${next.lesson.t}`;
-            if (next.dayOffset === 1) return `Завтра в ${next.lesson.t}`;
-            return `В ${DAYS_FULL[next.dow]} в ${next.lesson.t}`;
+        async function loadRaspAll() {
+            raspLoading = true;
+            await Promise.all([loadRasp(0), loadRasp(1)]);
+            raspLoading = false;
+            renderPlusCard();
+            if (isPlusOpen && sheetMode === 'rasp') renderSheet();
+        }
+
+        async function loadGroupDir() {
+            if (groupDir) return groupDir;
+            try {
+                const res = await fetch(PLUS_API + '/api/groups');
+                groupDir = (await res.json()).groups || [];
+            } catch (err) { groupDir = []; }
+            const dl = document.getElementById('groupList');
+            if (dl) dl.innerHTML = groupDir.map(([, name]) => `<option value="${escapeHtml(name)}">`).join('');
+            return groupDir;
+        }
+
+        // Пара, которая идёт сейчас, или ближайшая следующая (по этой и следующей неделе)
+        function findNextLesson() {
+            const now = Date.now();
+            const all = [0, 1].flatMap(o => (raspWeeks[o] && raspWeeks[o].lessons) || []);
+            return all.find(l => lessonTs(l, 'end') > now) || null;
+        }
+
+        function whenLabel(l) {
+            const now = Date.now();
+            if (lessonTs(l) <= now) return `Идёт до ${l.end}`;
+            const today = todayKey();
+            const tomorrow = mskDate(now + DAY_MS).toISOString().slice(0, 10);
+            if (l.date === today) return `Сегодня в ${l.start}`;
+            if (l.date === tomorrow) return `Завтра в ${l.start}`;
+            return `В ${WEEKDAYS_IN[new Date(l.date + 'T12:00:00Z').getUTCDay()]} в ${l.start}`;
         }
 
         // «ИТФ 205» → помещение из базы навигатора
@@ -1884,19 +1939,19 @@
             if (!inTelegram) {
                 html = `
                     <div class="plus-row" data-act="bot">
-                        <div><div class="plus-kicker">⭐ Студент+</div>
-                        <div class="plus-title">Следующая пара и напоминания</div>
+                        <div><div class="plus-kicker">📅 Расписание и ⭐ Студент+</div>
+                        <div class="plus-title">Твои пары и напоминания</div>
                         <div class="plus-sub">Открой навигатор в Telegram-боте</div></div>
                         <span class="plus-chevron">›</span>
                     </div>`;
             } else if (!plusState) {
-                html = `<div class="plus-sub">${plusError ? '⚠️ Студент+ временно недоступен' : 'Загружаем Студент+…'}</div>`;
+                html = `<div class="plus-sub">${plusError ? '⚠️ Сервер временно недоступен' : 'Загружаем…'}</div>`;
             } else if (!plusState.group) {
                 html = `
-                    <div class="plus-row" data-act="open">
-                        <div><div class="plus-kicker">⭐ Студент+</div>
+                    <div class="plus-row" data-act="rasp">
+                        <div><div class="plus-kicker">📅 Расписание</div>
                         <div class="plus-title">Выбери свою группу</div>
-                        <div class="plus-sub">${plusState.trialAvailable ? `${plusState.trialDays} дней бесплатно — следующая пара прямо здесь` : 'И здесь появится следующая пара'}</div></div>
+                        <div class="plus-sub">Пары подтянутся с сайта СтГАУ сами${plusState.trialAvailable ? ` · ${plusState.trialDays} дней Студент+ бесплатно` : ''}</div></div>
                         <span class="plus-chevron">›</span>
                     </div>`;
             } else if (!plusState.plus.active) {
@@ -1908,24 +1963,22 @@
                         <span class="plus-chevron">›</span>
                     </div>`;
             } else {
-                const schedule = plusState.group.schedule || [];
-                const next = schedule.length ? findNextLesson(schedule) : null;
+                const next = findNextLesson();
                 if (next) {
-                    const room = findRoomByText(next.lesson.room);
+                    const room = findRoomByText(next.room);
                     html = `
-                        <div class="plus-row" data-act="${room ? 'room' : 'open'}" data-room-text="${escapeHtml(next.lesson.room)}">
+                        <div class="plus-row" data-act="${room ? 'room' : 'rasp'}" data-room-text="${escapeHtml(next.room)}">
                             <div><div class="plus-kicker">${escapeHtml(whenLabel(next))} · ${escapeHtml(plusState.group.id)}</div>
-                            <div class="plus-title">${escapeHtml(next.lesson.subj || 'Пара')}</div>
-                            <div class="plus-sub">📍 ${escapeHtml(next.lesson.room || 'кабинет не указан')}${room ? ` · ${escapeHtml(room.location)}` : ''}</div></div>
+                            <div class="plus-title">${escapeHtml(next.subj || 'Пара')}</div>
+                            <div class="plus-sub">📍 ${escapeHtml(room ? next.room : (next.aud || 'аудитория не указана'))}${room ? ` · ${escapeHtml(room.location)}` : ''}${next.kind ? ` · ${escapeHtml(next.kind.toLowerCase())}` : ''}</div></div>
                             <span class="plus-chevron">›</span>
-                        </div>
-                        <button class="plus-mini" data-act="open">⭐</button>`;
+                        </div>`;
                 } else {
                     html = `
-                        <div class="plus-row" data-act="open">
+                        <div class="plus-row" data-act="rasp">
                             <div><div class="plus-kicker">⭐ Студент+ · ${escapeHtml(plusState.group.id)}</div>
-                            <div class="plus-title">${plusState.group.isOwner ? 'Заполни расписание группы' : 'Расписание группы пока пустое'}</div>
-                            <div class="plus-sub">${plusState.group.isOwner ? 'Ты староста — одногруппники увидят пары сразу' : 'Его заполняет староста — тот, кто первым добавил группу'}</div></div>
+                            <div class="plus-title">${raspLoading || !raspWeeks[0] ? 'Загружаем расписание…' : 'Ближайшие две недели пар нет'}</div>
+                            <div class="plus-sub">Расписание берётся с сайта СтГАУ</div></div>
                             <span class="plus-chevron">›</span>
                         </div>`;
                 }
@@ -1934,21 +1987,25 @@
             plusCard.innerHTML = html;
         }
 
-        /* ---------- Окно «Студент+» ---------- */
+        /* ---------- Окна «Расписание» и «Студент+» ---------- */
 
-        function openPlus() {
+        function openSheet(mode) {
             if (!inTelegram) { window.open(BOT_LINK, '_blank', 'noopener'); return; }
             if (isSearchOpen) closeFullscreenSearch(null, true);
+            sheetMode = mode;
+            document.getElementById('sheetTitle').textContent = mode === 'rasp' ? 'Расписание' : 'Студент+';
             isPlusOpen = true;
-            scheduleDraft = null;
             plusSheet.classList.add('open');
             plusSheet.setAttribute('aria-hidden', 'false');
             document.body.classList.add('sheet-open');
             playSound('search-open');
             haptic('light');
-            renderPlusSheet();
+            renderSheet();
             updateBackButton();
+            if (mode === 'rasp') loadGroupDir();
         }
+        const openPlus = () => openSheet('plus');
+        const openRasp = () => openSheet('rasp');
 
         function closePlus(silent) {
             if (!isPlusOpen) return;
@@ -1960,7 +2017,70 @@
             updateBackButton();
         }
 
+        const renderSheet = () => (sheetMode === 'rasp' ? renderRaspSheet() : renderPlusSheet());
         const section = (title, inner) => `<section class="plus-section"><h3>${title}</h3>${inner}</section>`;
+
+        function groupPickerHtml() {
+            const g = plusState.group;
+            return section(g ? 'Моя группа' : 'Выбери свою группу', `
+                <div class="plus-inline">
+                    <input class="plus-input" id="plusGroupInput" list="groupList" placeholder="Начни вводить, например ЭиЭ-О-23" maxlength="80" value="${g ? escapeHtml(g.id) : ''}" autocomplete="off">
+                    <button class="map-btn" data-act="group">${g ? 'Сменить' : 'Выбрать'}</button>
+                </div>
+                <datalist id="groupList">${(groupDir || []).map(([, name]) => `<option value="${escapeHtml(name)}">`).join('')}</datalist>
+                <p class="plus-note">Название как в ЭИОС. Можно вставить ссылку на расписание группы с lk2.stgau.ru.</p>
+            `);
+        }
+
+        function lessonHtml(l) {
+            const room = findRoomByText(l.room);
+            const now = Date.now();
+            const live = lessonTs(l) <= now && lessonTs(l, 'end') > now;
+            return `
+                <div class="lesson-row${live ? ' is-live' : ''}${room ? ' is-link' : ''}" ${room ? `data-act="room" data-room-text="${escapeHtml(l.room)}"` : ''}>
+                    <span class="lesson-day"><b>${escapeHtml(l.start)}</b>${escapeHtml(l.end)}</span>
+                    <span class="lesson-main">
+                        ${escapeHtml(l.subj || 'Пара')}
+                        <small>${l.kind ? `<i class="lesson-kind">${escapeHtml(l.kind)}</i> ` : ''}${l.change ? '<i class="lesson-kind is-change">замена</i> ' : ''}${escapeHtml(l.teacher)}${l.subgroup ? ` · подгр. ${l.subgroup}` : ''}</small>
+                        <small>📍 ${escapeHtml(room ? l.room : (l.aud || '—'))}${room ? ` · ${escapeHtml(room.location)} ›` : ''}</small>
+                    </span>
+                </div>`;
+        }
+
+        function renderRaspSheet() {
+            if (!plusState) {
+                plusBody.innerHTML = `<p class="plus-sub">${escapeHtml(plusError || 'Загружаем…')}</p>`;
+                return;
+            }
+            let html = groupPickerHtml();
+            if (plusState.group) {
+                const week = raspWeeks[raspOffset];
+                html += `
+                    <div class="week-tabs">
+                        <button class="week-tab ${raspOffset === 0 ? 'on' : ''}" data-act="week" data-week="0">Эта неделя</button>
+                        <button class="week-tab ${raspOffset === 1 ? 'on' : ''}" data-act="week" data-week="1">Следующая</button>
+                    </div>`;
+                if (!week) {
+                    html += `<p class="plus-note">Загружаем расписание с сайта СтГАУ…</p>`;
+                } else if (!week.lessons.length) {
+                    html += `<p class="plus-note">${week.error ? '⚠️ ' + escapeHtml(week.error) : 'На этой неделе пар нет 🎉'}</p>`;
+                } else {
+                    const today = todayKey();
+                    const days = [...new Set(week.lessons.map(l => l.date))];
+                    html += days.map(day => {
+                        const d = new Date(day + 'T12:00:00Z');
+                        const title = `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+                        return section(`${escapeHtml(title)}${day === today ? ' <span class="today-badge">сегодня</span>' : ''}`,
+                            week.lessons.filter(l => l.date === day).map(lessonHtml).join(''));
+                    }).join('');
+                }
+                if (week && week.updated) {
+                    const u = new Date(week.updated);
+                    html += `<p class="plus-note">Источник: ЭИОС СтГАУ · обновлено ${u.getDate()} ${MONTHS[u.getMonth()]}${week.stale ? ' · ⚠️ показана сохранённая копия' : ''}. Нажми на пару — откроется маршрут до аудитории.</p>`;
+                }
+            }
+            plusBody.innerHTML = html;
+        }
 
         function renderPlusSheet() {
             if (!plusState) {
@@ -1969,24 +2089,18 @@
             }
             const s = plusState;
             const st = s.plus;
-            const sourceLabel = { trial: 'пробный период', personal: 'твоя подписка', group: 'подписка группы' }[st.source] || '';
+            const sourceLabel = { trial: 'пробный период', personal: 'твоя подписка', group: 'подписка группы', forever: 'бессрочный доступ' }[st.source] || '';
             let html = '';
 
             html += `<div class="plus-status ${st.active ? 'on' : ''}">
                 ${st.active
-                    ? `✅ Студент+ активен до ${fmtDay(st.until)}<span>${sourceLabel}</span>`
+                    ? `✅ Студент+ активен ${st.until >= FOREVER_TS ? 'бессрочно' : 'до ' + fmtDay(st.until)}<span>${sourceLabel}</span>`
                     : `Студент+ не активен<span>${s.trialAvailable ? `Выбери группу — ${s.trialDays} дней бесплатно` : 'Выбери тариф ниже или приведи друзей'}</span>`}
             </div>`;
 
-            html += section('Моя группа', `
-                <div class="plus-inline">
-                    <input class="plus-input" id="plusGroupInput" placeholder="Например, ЭК-21-1" maxlength="24" value="${s.group ? escapeHtml(s.group.id) : ''}">
-                    <button class="map-btn" data-act="group">${s.group ? 'Сменить' : 'Выбрать'}</button>
-                </div>
-                ${s.group ? `<p class="plus-note">${s.group.members} чел. в группе${s.group.isOwner ? ' · ты староста' : ''}</p>` : ''}
-            `);
-
-            if (s.group && (st.active || s.group.isOwner)) html += scheduleSectionHtml();
+            html += section('Моя группа', s.group
+                ? `<button class="plus-plan" data-act="rasp"><span><b>${escapeHtml(s.group.id)}</b><small>${s.group.members} чел. в навигаторе · открыть расписание</small></span><em>›</em></button>`
+                : `<button class="plus-plan" data-act="rasp"><span><b>Выбрать группу</b><small>расписание подтянется с сайта СтГАУ</small></span><em>›</em></button>`);
 
             if (st.active) {
                 const favs = s.user.favs || [];
@@ -2000,18 +2114,20 @@
                     </label>`);
             }
 
-            const planBtn = (key, sub) => `
-                <button class="plus-plan" data-act="buy" data-plan="${key}">
-                    <span><b>${escapeHtml(s.plans[key].short)}</b><small>${sub}</small></span>
-                    <em>${s.plans[key].stars} ⭐</em>
-                </button>`;
-            html += section(st.active ? 'Продлить' : 'Тарифы', `
-                ${planBtn('month', '30 дней')}
-                ${planBtn('semester', 'до конца семестра · выгоднее всего')}
-                ${planBtn('year', '365 дней')}
-                ${s.group ? planBtn('group', `для первых 30 человек группы ${escapeHtml(s.group.id)}`) : ''}
-                <p class="plus-note">Оплата звёздами Telegram. Продление прибавляется к оставшемуся сроку.</p>
-            `);
+            if (st.source !== 'forever') {
+                const planBtn = (key, sub) => `
+                    <button class="plus-plan" data-act="buy" data-plan="${key}">
+                        <span><b>${escapeHtml(s.plans[key].short)}</b><small>${sub}</small></span>
+                        <em>${s.plans[key].stars} ⭐</em>
+                    </button>`;
+                html += section(st.active ? 'Продлить' : 'Тарифы', `
+                    ${planBtn('month', '30 дней')}
+                    ${planBtn('semester', 'до конца семестра · выгоднее всего')}
+                    ${planBtn('year', '365 дней')}
+                    ${s.group ? planBtn('group', `для первых 30 человек группы ${escapeHtml(s.group.id)}`) : ''}
+                    <p class="plus-note">Оплата звёздами Telegram. Продление прибавляется к оставшемуся сроку.</p>
+                `);
+            }
 
             const done = s.ref.count % s.ref.goal;
             html += section('Приведи друзей', `
@@ -2021,56 +2137,6 @@
             `);
 
             plusBody.innerHTML = html;
-        }
-
-        function scheduleSectionHtml() {
-            const s = plusState;
-            const editable = s.group.isOwner;
-            const list = scheduleDraft || s.group.schedule || [];
-            const rows = list.map((l, i) => `
-                <div class="lesson-row">
-                    <span class="lesson-day">${DAYS_SHORT[l.d]}<b>${escapeHtml(l.t)}</b></span>
-                    <span class="lesson-main" ${findRoomByText(l.room) ? `data-act="fav-open" data-room-text="${escapeHtml(l.room)}"` : ''}>
-                        ${escapeHtml(l.subj || 'Пара')}
-                        <small>📍 ${escapeHtml(l.room || '—')}${l.w !== 'all' ? ` · ${WEEK_LABEL[l.w]}` : ''}</small>
-                    </span>
-                    ${editable ? `<button class="lesson-del" data-act="lesson-del" data-i="${i}" aria-label="Удалить">✕</button>` : ''}
-                </div>`).join('');
-
-            let form = '';
-            if (editable) {
-                const unitOptions = UNITS.filter(u => !u.place).map(u => `<option value="${escapeHtml(u.code)}">${escapeHtml(u.code)}</option>`).join('');
-                form = `
-                    <div class="lesson-form">
-                        <select class="plus-input" id="lfDay">${DAYS_SHORT.slice(1).map((d, i) => `<option value="${i + 1}">${d}</option>`).join('')}</select>
-                        <input class="plus-input" id="lfTime" type="time" value="08:00">
-                        <select class="plus-input" id="lfUnit">${unitOptions}</select>
-                        <input class="plus-input" id="lfRoom" placeholder="Кабинет" list="lfRooms" maxlength="20">
-                        <datalist id="lfRooms"></datalist>
-                        <input class="plus-input lf-wide" id="lfSubj" placeholder="Предмет" maxlength="80">
-                        <select class="plus-input lf-wide" id="lfWeek">
-                            <option value="all">Каждую неделю</option>
-                            <option value="num">Числитель</option>
-                            <option value="den">Знаменатель</option>
-                        </select>
-                        <button class="map-btn lf-wide" data-act="lesson-add">＋ Добавить пару</button>
-                    </div>
-                    ${scheduleDraft ? `<button class="map-btn plus-wide plus-save" data-act="schedule-save">Сохранить расписание</button>` : ''}`;
-            }
-
-            return section(`Расписание ${escapeHtml(s.group.id)}`, `
-                <p class="plus-note">Сейчас ${weekTypeAt(Date.now()) === 'num' ? 'числитель' : 'знаменатель'}.${editable ? ' Ты староста — расписание увидят все в группе.' : ''}</p>
-                ${rows || '<p class="plus-note">Пар пока нет.</p>'}
-                ${form}
-            `);
-        }
-
-        function fillRoomList() {
-            const unitSel = document.getElementById('lfUnit');
-            const dl = document.getElementById('lfRooms');
-            if (!unitSel || !dl) return;
-            dl.innerHTML = roomsDatabase.filter(r => r.unit === unitSel.value)
-                .map(r => `<option value="${escapeHtml(r.number)}">`).join('');
         }
 
         /* ---------- Избранное (кнопка в панели маршрута) ---------- */
@@ -2107,19 +2173,32 @@
             if (act === 'close') return closePlus();
             if (act === 'bot') return window.open(BOT_LINK, '_blank', 'noopener');
             if (act === 'open') return openPlus();
+            if (act === 'rasp') return isPlusOpen ? (sheetMode = 'rasp', document.getElementById('sheetTitle').textContent = 'Расписание', loadGroupDir(), renderSheet()) : openRasp();
             if (act === 'room' || act === 'fav-open') {
-                if (!openRoomByText(el.dataset.roomText)) showPlusToast('Такого кабинета нет в навигаторе');
+                if (!openRoomByText(el.dataset.roomText)) showPlusToast('Такой аудитории нет в навигаторе');
                 return;
             }
             if (act === 'fav') return toggleFav(el);
+
+            if (act === 'week') {
+                raspOffset = Number(el.dataset.week) || 0;
+                haptic('light');
+                renderSheet();
+                if (!raspWeeks[raspOffset]) { await loadRasp(raspOffset); renderSheet(); }
+                return;
+            }
 
             if (act === 'group') {
                 const name = document.getElementById('plusGroupInput').value;
                 el.disabled = true;
                 try {
                     plusState = await plusApi('/api/group', { name });
+                    savePlusCache(plusState);
+                    raspWeeks = {};
+                    raspOffset = 0;
                     haptic('medium');
-                    renderPlusCard(); renderPlusSheet();
+                    renderPlusCard(); renderSheet();
+                    loadRaspAll();
                 } catch (err) { showPlusToast(err.message); el.disabled = false; }
                 return;
             }
@@ -2144,46 +2223,14 @@
             if (act === 'share') {
                 const url = `https://t.me/share/url?url=${encodeURIComponent(plusState.ref.link)}&text=${encodeURIComponent('Навигатор по корпусам СтГАУ — найди любой кабинет за пару секунд 🧭')}`;
                 try { tg.openTelegramLink(url); } catch (err) { window.open(url, '_blank', 'noopener'); }
-                return;
-            }
-
-            if (act === 'lesson-del') {
-                scheduleDraft = (scheduleDraft || plusState.group.schedule.slice());
-                scheduleDraft.splice(Number(el.dataset.i), 1);
-                renderPlusSheet();
-                return;
-            }
-
-            if (act === 'lesson-add') {
-                const v = (id) => document.getElementById(id).value.trim();
-                if (!v('lfTime')) return showPlusToast('Укажи время пары');
-                const room = v('lfRoom') ? `${v('lfUnit')} ${v('lfRoom')}` : '';
-                scheduleDraft = (scheduleDraft || plusState.group.schedule.slice());
-                scheduleDraft.push({ d: Number(v('lfDay')), t: v('lfTime'), room, subj: v('lfSubj'), w: v('lfWeek') });
-                scheduleDraft.sort((a, b) => a.d - b.d || a.t.localeCompare(b.t));
-                const keep = { d: v('lfDay'), t: v('lfTime'), unit: v('lfUnit'), w: v('lfWeek') };
-                renderPlusSheet();
-                // оставляем день/время/корпус — удобно вбивать пары подряд
-                document.getElementById('lfDay').value = keep.d;
-                document.getElementById('lfTime').value = keep.t;
-                document.getElementById('lfUnit').value = keep.unit;
-                document.getElementById('lfWeek').value = keep.w;
-                fillRoomList();
-                return;
-            }
-
-            if (act === 'schedule-save') {
-                el.disabled = true;
-                try {
-                    plusState = await plusApi('/api/schedule', { schedule: scheduleDraft });
-                    scheduleDraft = null;
-                    haptic('medium');
-                    renderPlusCard(); renderPlusSheet();
-                } catch (err) { showPlusToast(err.message); el.disabled = false; }
             }
         }
 
         plusCard.addEventListener('click', (e) => {
+            const el = e.target.closest('[data-act]');
+            if (el) plusAction(el);
+        });
+        document.getElementById('quickBar').addEventListener('click', (e) => {
             const el = e.target.closest('[data-act]');
             if (el) plusAction(el);
         });
@@ -2193,10 +2240,15 @@
             if (el && el.tagName !== 'INPUT') plusAction(el);
         });
         plusSheet.addEventListener('change', async (e) => {
-            if (e.target.id === 'lfUnit') return fillRoomList();
             if (e.target.dataset.act === 'remind') {
                 try { await plusApi('/api/remind', { on: e.target.checked }); plusState.user.remind = e.target.checked; }
                 catch (err) { e.target.checked = !e.target.checked; showPlusToast(err.message); }
+            }
+        });
+        plusSheet.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.id === 'plusGroupInput') {
+                const btn = plusSheet.querySelector('[data-act="group"]');
+                if (btn) plusAction(btn);
             }
         });
         // Кнопка «☆ В избранное» живёт в панели маршрута
@@ -2209,12 +2261,17 @@
         setInterval(() => { if (plusState) renderPlusCard(); }, 60000);
 
         loadPlus().then(() => {
-            // Ссылки из напоминаний: #room=ИТФ%20205 — сразу открыть кабинет; #plus — открыть окно
+            if (plusState && plusState.group) {
+                const cached = readRaspCache();
+                if (cached) { raspWeeks = cached; renderPlusCard(); }
+                loadRaspAll();
+            }
+            // Ссылки: #room=ИТФ%20205 — сразу открыть кабинет; #plus и #rasp — открыть окно
             const hash = decodeURIComponent(location.hash || '');
             if (hash.startsWith('#room=')) openRoomByText(hash.slice(6));
             else if (hash === '#plus') openPlus();
+            else if (hash === '#rasp') openRasp();
         });
-        fillRoomList();
 
         /* =====================================================================
            ОФЛАЙН-РЕЖИМ: sw.js сохраняет сайт на телефоне после первого открытия
