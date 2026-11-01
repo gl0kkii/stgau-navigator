@@ -454,6 +454,7 @@
         body.optimized .glass-card, 
         body.optimized .content-display, 
         body.optimized .info-route-panel, 
+        body.optimized .plus-card, 
         body.optimized .optimize-btn {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -580,6 +581,155 @@
         body.optimized .map-btn { background: rgba(255, 255, 255, 0.12) !important; }
 
         /* =====================================================================
+           СТУДЕНТ+: карточка «следующая пара» и окно подписки
+           ===================================================================== */
+        .plus-card {
+            position: relative;
+            margin-bottom: 14px;
+            padding: 14px 16px;
+            border-radius: 20px;
+            background: var(--glass-base);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            opacity: 0;
+            animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+        }
+        .plus-card[hidden] { display: none; }
+
+        /* Маршрут пешком, «поесть рядом», статус столовой, поделиться */
+        .route-btn { width: 100%; margin-top: 10px; background: #fff; color: var(--bg-main); border-color: transparent; }
+        .route-btn:active { background: rgba(255, 255, 255, 0.8); }
+        .map-actions .map-btn { flex: 1 1 0; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
+        .map-actions .map-btn[data-from-me] { flex: 2 1 0; }
+        .route-status { margin-bottom: 8px; }
+        .open-status { font-size: 12px; font-weight: 600; }
+        .open-status::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+        .open-status.is-open { color: #30d158; }
+        .open-status.is-open::before { background: #30d158; }
+        .open-status.is-closed { color: #ff6961; }
+        .open-status.is-closed::before { background: #ff6961; }
+        .near-food {
+            display: grid; gap: 2px; margin-top: 10px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
+            background: rgba(118, 118, 128, 0.12); transition: transform 0.35s var(--ios-spring), background 0.2s ease;
+        }
+        .near-food:active { transform: scale(0.97); background: var(--glass-active); }
+        .near-food > span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ios-label-2); }
+        .near-food b { font-size: 14px; color: #fff; }
+        .near-food small { font-size: 12px; color: var(--ios-label-2); }
+        .route-extra { display: flex; gap: 8px; margin-top: 10px; }
+        .route-extra .map-btn { flex: 1 1 0; width: auto; margin-top: 0; }
+        .recent-row { margin-bottom: 16px; }
+        .toast {
+            position: fixed; left: 50%; bottom: calc(80px + var(--sab)); z-index: 1200;
+            transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+            max-width: calc(100% - 32px); padding: 10px 16px; border-radius: 999px;
+            background: rgba(40, 42, 50, 0.96); border: 1px solid var(--glass-border); color: #fff; font-size: 13px;
+            transition: opacity 0.3s ease, transform 0.4s var(--ios-spring);
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        .plus-offline { margin-top: 8px; font-size: 11px; color: var(--ios-yellow); }
+        .header p.is-offline { color: var(--ios-yellow); }
+        .plus-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; padding-right: 0; }
+        .plus-card .plus-row { padding-right: 36px; }
+        .plus-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--ios-label-2); margin-bottom: 3px; }
+        .plus-title { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+        .plus-sub { font-size: 12px; color: var(--ios-label-2); margin-top: 3px; line-height: 1.35; }
+        .plus-chevron { font-size: 26px; color: var(--ios-label-3); line-height: 1; }
+        .plus-card .plus-chevron { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
+        .plus-mini {
+            position: absolute; right: 44px; top: 50%; transform: translateY(-50%);
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1px solid var(--glass-border); background: var(--accent-tint); color: #fff; font-size: 14px; cursor: pointer;
+        }
+        .plus-card:has(.plus-mini) .plus-row { padding-right: 72px; }
+
+        body.sheet-open { overflow: hidden; }
+        body.sheet-open .optimize-btn { opacity: 0; pointer-events: none; }
+        .plus-sheet {
+            position: fixed; inset: 0; z-index: 1100;
+            background: rgba(0, 0, 0, 0.45);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        .plus-sheet.open { opacity: 1; pointer-events: auto; }
+        .plus-sheet-inner {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            max-height: calc(var(--tg-viewport-stable-height, 100vh) - 40px);
+            overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+            padding: 18px 16px calc(24px + var(--sab));
+            background: rgba(14, 16, 22, 0.97);
+            border-top: 1px solid var(--glass-border);
+            border-radius: 26px 26px 0 0;
+            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+            transform: translate3d(0, 100%, 0);
+            transition: transform 0.55s var(--ios-spring);
+        }
+        .plus-sheet.open .plus-sheet-inner { transform: translate3d(0, 0, 0); }
+        .plus-sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .plus-sheet-head h2 { font-size: 24px; font-weight: 700; }
+        .plus-close { opacity: 1; transform: none; pointer-events: auto; }
+
+        .plus-status {
+            padding: 14px; border-radius: 14px; margin-bottom: 18px;
+            background: rgba(118, 118, 128, 0.16); font-size: 15px; font-weight: 600;
+        }
+        .plus-status.on { background: var(--accent-tint); border: 1px solid var(--glass-border); }
+        .plus-status span { display: block; font-size: 12px; font-weight: 400; color: var(--ios-label-2); margin-top: 3px; }
+
+        .plus-section { margin-bottom: 22px; }
+        .plus-section h3 { font-size: 13px; font-weight: 400; color: var(--ios-label-2); text-transform: uppercase; letter-spacing: 0.3px; margin: 0 0 8px 4px; }
+        .plus-note { font-size: 12px; color: var(--ios-label-2); margin: 8px 4px; line-height: 1.4; }
+        .plus-inline { display: flex; gap: 8px; }
+        .plus-inline .plus-input { flex: 1; }
+        .plus-inline .map-btn { flex: 0 0 auto; }
+        .plus-input {
+            width: 100%; min-width: 0; height: 40px; padding: 0 12px;
+            border-radius: 10px; border: 1px solid transparent; outline: none;
+            background: var(--ios-fill); color: #fff; font: inherit; font-size: 15px;
+            -webkit-appearance: none; appearance: none;
+        }
+        .plus-input:focus { border-color: var(--glass-border-glow); }
+        .plus-input::placeholder { color: var(--ios-label-3); }
+        select.plus-input { cursor: pointer; }
+        .plus-wide { width: 100%; margin-top: 8px; }
+        .plus-save { background: #fff; color: var(--bg-main); }
+        .fav-btn { margin-top: 10px; }
+
+        .plus-plan {
+            width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 12px 14px; margin-bottom: 8px; text-align: left; cursor: pointer;
+            border-radius: 14px; border: 1px solid var(--glass-border);
+            background: rgba(118, 118, 128, 0.12); color: #fff; font: inherit;
+            transition: transform 0.35s var(--ios-spring), background 0.2s ease;
+        }
+        .plus-plan:active { transform: scale(0.97); background: var(--glass-active); }
+        .plus-plan b { display: block; font-size: 15px; }
+        .plus-plan small { display: block; font-size: 12px; color: var(--ios-label-2); margin-top: 2px; }
+        .plus-plan em { font-style: normal; font-weight: 700; font-size: 15px; white-space: nowrap; }
+
+        .plus-progress { height: 6px; border-radius: 3px; background: var(--ios-fill); overflow: hidden; margin: 4px 4px 0; }
+        .plus-progress i { display: block; height: 100%; background: #fff; border-radius: 3px; }
+
+        .plus-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(118, 118, 128, 0.12); font-size: 14px; cursor: pointer; }
+        .plus-switch input { display: none; }
+        .plus-switch i { position: relative; flex: 0 0 auto; width: 51px; height: 31px; border-radius: 16px; background: var(--ios-fill); transition: background 0.25s ease; }
+        .plus-switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; transition: transform 0.3s var(--ios-spring); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+        .plus-switch input:checked + i { background: #30d158; }
+        .plus-switch input:checked + i::after { transform: translateX(20px); }
+
+        .lesson-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(118, 118, 128, 0.12); margin-bottom: 6px; }
+        .lesson-day { flex: 0 0 44px; font-size: 11px; color: var(--ios-label-2); text-align: center; }
+        .lesson-day b { display: block; font-size: 14px; color: #fff; }
+        .lesson-main { flex: 1; font-size: 14px; font-weight: 600; min-width: 0; }
+        .lesson-main[data-act] { cursor: pointer; }
+        .lesson-main small { display: block; font-size: 12px; font-weight: 400; color: var(--ios-label-2); margin-top: 2px; }
+        .lesson-del { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--ios-fill); color: #fff; cursor: pointer; }
+        .lesson-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
+        .lesson-form .lf-wide { grid-column: 1 / -1; }
+
+        /* =====================================================================
            ANDROID: тот же вид, что на iOS, но без лагов (класс .android ставит скрипт)
            ---------------------------------------------------------------------
            Лагало из-за backdrop-filter: пока пузыри двигаются, каждая стеклянная
@@ -592,6 +742,7 @@
         .android .glass-card,
         .android .content-display,
         .android .info-route-panel,
+        .android .plus-card,
         .android .optimize-btn,
         .android .suggestions-overlay {
             backdrop-filter: none;
@@ -615,7 +766,7 @@
 
     <div class="header">
         <h1>Навигатор СтГАУ</h1>
-        <p>Интерактивная система кампуса</p>
+        <p id="headerSub">Интерактивная система кампуса</p>
     </div>
 
     <div class="search-wrapper" id="searchWrapper">
@@ -629,6 +780,8 @@
             <div id="searchResultsList"></div>
         </div>
     </div>
+
+    <div class="plus-card" id="plusCard" hidden></div>
 
     <div class="grid-container units" id="unitGrid"></div>
 
@@ -645,6 +798,16 @@
     </div>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
+
+    <div class="plus-sheet" id="plusSheet" aria-hidden="true">
+        <div class="plus-sheet-inner">
+            <div class="plus-sheet-head">
+                <h2>Студент+</h2>
+                <button class="close-btn plus-close" data-act="close" aria-label="Закрыть">✕</button>
+            </div>
+            <div id="plusBody"></div>
+        </div>
+    </div>
 
     <script>
         // Если telegram-web-app.js не загрузился (или страница открыта вне Telegram) — работаем как обычная страница
@@ -820,16 +983,30 @@
             'ДП':   null
         };
 
-        const mapQuery = (b) => encodeURIComponent(`${CITY}, ${b.address}`);
-        const MAP_LINKS = {
-            yandex: (b) => `https://yandex.ru/maps/?text=${mapQuery(b)}`,
-            apple:  (b) => `https://maps.apple.com/?q=${mapQuery(b)}`
+        // Координаты зданий (OpenStreetMap). По ним строится пеший маршрут «от меня» и считается время пешком.
+        const COORDS = {
+            'пер. Зоотехнический, 12':        [45.037815, 41.961810],
+            'пер. Зоотехнический, 12, стр. 1': [45.037815, 41.961810],
+            'пер. Зоотехнический, 12а':       [45.037720, 41.960354],
+            'ул. Мира, 302':                  [45.035868, 41.962100],
+            'ул. Мира, 347':                  [45.037903, 41.962564],
+            'ул. Мира, 347, корп. 2':         [45.036932, 41.962263],
+            'ул. Мира, 347, корп. 4':         [45.037903, 41.962564],
+            'ул. Мира, 347, корп. 6':         [45.038564, 41.962059],
+            'ул. Серова, 523':                [45.030148, 42.018154],
+            'ул. Пушкина, 17':                [45.037625, 41.963035],
+            'пр. Волго-Донской, 97А':         [45.027563, 41.949654]
         };
 
-        function openMap(kind, address) {
-            if (!address || !MAP_LINKS[kind]) return;
-            const url = MAP_LINKS[kind]({ address });
-            haptic('light');
+        const mapQuery = (address) => encodeURIComponent(`${CITY}, ${address}`);
+        // Пеший маршрут от текущего местоположения; без координат — просто поиск адреса
+        const MAP_LINKS = {
+            yandex: (address, c) => c ? `https://yandex.ru/maps/?rtext=~${c[0]},${c[1]}&rtt=pd` : `https://yandex.ru/maps/?text=${mapQuery(address)}`,
+            google: (address, c) => `https://www.google.com/maps/dir/?api=1&destination=${c ? c.join(',') : mapQuery(address)}&travelmode=walking`,
+            apple:  (address, c) => c ? `https://maps.apple.com/?daddr=${c[0]},${c[1]}&dirflg=w` : `https://maps.apple.com/?q=${mapQuery(address)}`
+        };
+
+        function openUrl(url) {
             // В Telegram ссылки открываем через WebApp API, иначе — новой вкладкой
             if (tg && typeof tg.openLink === 'function') {
                 try { tg.openLink(url); return; } catch (err) { /* старый клиент — ниже обычный способ */ }
@@ -837,16 +1014,72 @@
             window.open(url, '_blank', 'noopener');
         }
 
+        function openMap(kind, address) {
+            if (!address || !MAP_LINKS[kind]) return;
+            haptic('light');
+            openUrl(MAP_LINKS[kind](address, COORDS[address]));
+        }
+
+        // Расстояние по прямой × 1.25 (улицы не прямые), пешком ~75 м/мин
+        function walkBetween(a, b) {
+            if (!a || !b) return null;
+            const R = 6371000, rad = Math.PI / 180;
+            const dLat = (b[0] - a[0]) * rad, dLon = (b[1] - a[1]) * rad;
+            const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin(dLon / 2) ** 2;
+            const meters = 2 * R * Math.asin(Math.sqrt(h)) * 1.25;
+            return { meters, minutes: Math.max(1, Math.round(meters / 75)) };
+        }
+
+        function walkLabel(w) {
+            if (!w) return '';
+            if (w.meters < 60) return 'в этом же здании или рядом';
+            const dist = w.meters < 1000 ? `${Math.round(w.meters / 10) * 10} м` : `${(w.meters / 1000).toFixed(1).replace('.', ',')} км`;
+            return w.minutes > 30 ? `≈ ${dist} — лучше на транспорте` : `≈ ${w.minutes} мин пешком · ${dist}`;
+        }
+
         // b — объект здания { address, place } (из BUILDINGS или из группы столовых)
         function mapButtonsHtml(b) {
             if (!b) return '';
             const addr = escapeHtml(b.address);
             return `
+                <button class="map-btn route-btn" data-map="yandex" data-addr="${addr}">🚶 Маршрут пешком</button>
                 <div class="map-actions">
-                    <button class="map-btn" data-map="yandex" data-addr="${addr}">Яндекс Карты</button>
-                    <button class="map-btn" data-map="apple" data-addr="${addr}">Apple Карты</button>
+                    <button class="map-btn" data-map="google" data-addr="${addr}">Google</button>
+                    <button class="map-btn" data-map="apple" data-addr="${addr}">Apple</button>
+                    ${COORDS[b.address] ? `<button class="map-btn" data-from-me="${addr}">📍 Сколько идти</button>` : ''}
                 </div>
             `;
+        }
+
+        /* ---------- Столовые: открыто сейчас или нет (как в 2ГИС) ---------- */
+
+        const FOOD_OPEN = 8, FOOD_CLOSE = 17;   // Пн–Пт 8:00–17:00 по Москве
+
+        function foodStatus(now = Date.now()) {
+            const d = new Date(now + 180 * 60000);
+            const dow = (d.getUTCDay() + 6) % 7 + 1;   // 1 = пн … 7 = вс
+            const h = d.getUTCHours() + d.getUTCMinutes() / 60;
+            if (dow <= 5 && h >= FOOD_OPEN && h < FOOD_CLOSE) {
+                const left = Math.round((FOOD_CLOSE - h) * 60);
+                return { open: true, text: left <= 60 ? `Открыто · закроется через ${left} мин` : `Открыто до ${FOOD_CLOSE}:00` };
+            }
+            let when;
+            if (dow <= 5 && h < FOOD_OPEN) when = `сегодня в ${FOOD_OPEN}:00`;
+            else if (dow <= 4) when = `завтра в ${FOOD_OPEN}:00`;
+            else when = `в понедельник в ${FOOD_OPEN}:00`;
+            return { open: false, text: `Закрыто · откроется ${when}` };
+        }
+
+        const statusHtml = (s) => `<span class="open-status ${s.open ? 'is-open' : 'is-closed'}">${escapeHtml(s.text)}</span>`;
+
+        // Ближайшая к зданию столовая — блок «Поесть рядом» в панели маршрута
+        function nearestFood(address) {
+            const from = COORDS[address];
+            if (!from) return null;
+            return roomsDatabase
+                .filter(r => r.unitPlace && r.building && COORDS[r.building.address])
+                .map(r => ({ room: r, walk: walkBetween(from, COORDS[r.building.address]) }))
+                .sort((a, b) => a.walk.meters - b.walk.meters)[0] || null;
         }
 
         function addressHtml(b) {
@@ -1108,12 +1341,14 @@
 
         function updateBackButton() {
             if (!tgSupports('6.1')) return;
-            const needed = isSearchOpen || isDetailsOpen;
+            const needed = isSearchOpen || isDetailsOpen || isPlusOpen;
             try { needed ? tg.BackButton.show() : tg.BackButton.hide(); } catch (err) { /* нет поддержки */ }
         }
 
         function handleBack() {
-            if (isSearchOpen) {
+            if (isPlusOpen) {
+                closePlus();
+            } else if (isSearchOpen) {
                 closeFullscreenSearch();
             } else if (isDetailsOpen && currentUnit) {
                 selectUnit(currentUnit);
@@ -1136,6 +1371,7 @@
 
         let isSearchOpen = false;
         let isDetailsOpen = false;
+        let isPlusOpen = false;
         let currentUnit = null;
 
         searchInput.addEventListener('focus', () => {
@@ -1206,35 +1442,65 @@
         const sectionLabel = (text) =>
             `<p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">${text}</p>`;
 
-        function renderSearchResults(query) {
-            const q = normalize(query.trim());
+        // Набрал в английской раскладке («yr 415») — понимаем как «нк 415», как Яндекс
+        const LAYOUT_EN = "qwertyuiop[]asdfghjkl;'zxcvbnm,.`";
+        const LAYOUT_RU = 'йцукенгшщзхъфывапролджэячсмитьбюё';
+        const fixLayout = (s) => s.toLowerCase().split('').map(ch => {
+            const i = LAYOUT_EN.indexOf(ch);
+            return i > -1 ? LAYOUT_RU[i] : ch;
+        }).join('');
 
-            // Пустой запрос — показываем подразделения
-            if (!q) {
-                searchResultsList.innerHTML = sectionLabel('Подразделения') + UNITS.map(unitCardHtml).join('');
-                return;
-            }
+        // «нк415» → «нк 415», «415нк» → «415 нк»; «215а» не трогаем (одна буква — часть номера)
+        const splitCodeNumber = (q) => q
+            .replace(/([а-яa-z]{2,})(\d)/g, '$1 $2')
+            .replace(/(\d)([а-яa-z]{2,})/g, '$1 $2');
 
+        function searchRooms(q) {
             // Все слова запроса должны встретиться: «итф 205», «нк 4 этаж»
             const tokens = q.split(/\s+/);
-            const matchedUnits = UNITS.filter(u => tokens.length === 1 && normalize(u.code + ' ' + (u.name || '')).includes(q));
+            const units = UNITS.filter(u => tokens.length === 1 && normalize(u.code + ' ' + (u.name || '')).includes(q));
             const rank = (room) => {
                 if (tokens.some(t => room.numberNorm === t)) return 0;          // точный номер
                 if (tokens.some(t => room.numberNorm.startsWith(t))) return 1;  // номер начинается с запроса
                 return 2;
             };
-            const found = roomsDatabase
+            const rooms = roomsDatabase
                 .filter(room => tokens.every(t => room.haystack.includes(t)))
                 .map(room => ({ room, r: rank(room) }))
                 .sort((a, b) => a.r - b.r || Number(a.room.id) - Number(b.room.id))
                 .map(x => x.room);
+            return { units, rooms };
+        }
 
-            if (!found.length && !matchedUnits.length) {
-                searchResultsList.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 14px;">Ничего не найдено по запросу «<b>${escapeHtml(query.trim())}</b>»</p>`;
+        function renderSearchResults(query) {
+            const raw = query.trim();
+            const q = normalize(splitCodeNumber(raw.toLowerCase()));
+
+            // Пустой запрос — недавние кабинеты и подразделения
+            if (!q) {
+                searchResultsList.innerHTML = recentHtml() + sectionLabel('Подразделения') + UNITS.map(unitCardHtml).join('');
                 return;
             }
 
-            let html = '';
+            let res = searchRooms(q);
+            let fixedNote = '';
+            if (!res.rooms.length && !res.units.length && /[a-z]/i.test(raw)) {
+                const fixed = splitCodeNumber(fixLayout(raw));
+                const res2 = searchRooms(normalize(fixed));
+                if (res2.rooms.length || res2.units.length) {
+                    res = res2;
+                    fixedNote = `<p class="search-note">Показаны результаты по запросу «<b>${escapeHtml(fixed)}</b>»</p>`;
+                }
+            }
+            const matchedUnits = res.units;
+            const found = res.rooms;
+
+            if (!found.length && !matchedUnits.length) {
+                searchResultsList.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 14px;">Ничего не найдено по запросу «<b>${escapeHtml(raw)}</b>»</p>`;
+                return;
+            }
+
+            let html = fixedNote;
             if (matchedUnits.length) {
                 html += sectionLabel('Подразделения') + matchedUnits.map(unitCardHtml).join('');
             }
@@ -1308,6 +1574,8 @@
             if (!unit.place) {
                 const b = BUILDINGS[code];
                 html += `<div class="unit-address">${addressHtml(b)}${mapButtonsHtml(b)}</div>`;
+            } else {
+                html += `<div class="unit-address">${statusHtml(foodStatus())}</div>`;
             }
 
             unit.floorList.forEach(floor => {
@@ -1333,13 +1601,26 @@
             contentLayout.classList.add('active-details');
             updateBackButton();
 
+            const food = !room.unitPlace && room.building ? nearestFood(room.building.address) : null;
             routeContent.innerHTML = `
+                ${room.unitPlace ? `<div class="route-status">${statusHtml(foodStatus())}</div>` : ''}
                 <div class="route-address">${addressHtml(room.building)}</div>
                 ${mapButtonsHtml(room.building)}
                 <ol class="route-steps">
                     ${room.route.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
                 </ol>
+                ${food ? `
+                    <div class="near-food" data-room="${food.room.id}">
+                        <span>🍽 Поесть рядом</span>
+                        <b>${escapeHtml(food.room.title)}</b>
+                        <small>${escapeHtml(walkLabel(food.walk))} · ${statusHtml(foodStatus())}</small>
+                    </div>` : ''}
+                <div class="route-extra">
+                    <button class="map-btn" data-share="${room.id}">📤 Поделиться</button>
+                    ${favButtonHtml(room)}
+                </div>
             `;
+            rememberRecent(room);
 
             swapContent(`
                 <div class="room-info" style="text-align: left;">
@@ -1359,14 +1640,601 @@
 
         /* ---------- Обработка тапов (делегирование) ---------- */
 
+        /* ---------- Недавние кабинеты (как история в картах) ---------- */
+
+        const RECENT_KEY = 'stgau-recent';
+        const recentKey = (room) => `${room.unit} ${room.number}`;
+
+        function readRecent() {
+            try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch (err) { return []; }
+        }
+
+        function rememberRecent(room) {
+            const list = [recentKey(room)].concat(readRecent().filter(k => k !== recentKey(room))).slice(0, 6);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (err) { /* хранилище недоступно */ }
+        }
+
+        function recentHtml() {
+            const rooms = readRecent().map(findRoomByText).filter(Boolean);
+            if (!rooms.length) return '';
+            return sectionLabel('Недавние') + `<div class="chip-row recent-row">${rooms.map(r =>
+                `<div class="room-chip" data-room="${r.id}">${escapeHtml(r.unitPlace ? r.number : recentKey(r))}</div>`
+            ).join('')}</div>`;
+        }
+
+        /* ---------- Поделиться кабинетом ---------- */
+
+        const SITE_URL = 'https://gl0kkii.github.io/stgau-navigator/';
+
+        async function shareRoom(id) {
+            const room = roomsDatabase.find(r => r.id === id);
+            if (!room) return;
+            const url = `${SITE_URL}#room=${encodeURIComponent(recentKey(room))}`;
+            const text = `${room.title} — ${room.unitName}, ${room.location}${room.building ? `, ${room.building.address}` : ''}`;
+            haptic('light');
+            if (tg && typeof tg.openTelegramLink === 'function' && tg.initData) {
+                try { tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`); return; } catch (err) { /* ниже */ }
+            }
+            if (navigator.share) {
+                try { await navigator.share({ title: room.title, text, url }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
+            }
+            try { await navigator.clipboard.writeText(`${text}\n${url}`); showToast('Ссылка скопирована'); } catch (err) { showToast(url); }
+        }
+
+        /* ---------- «Сколько идти» от текущего места ---------- */
+
+        function getMyLocation() {
+            return new Promise((resolve, reject) => {
+                const lm = tg && tg.LocationManager;
+                if (lm && tgSupports('8.0')) {
+                    try {
+                        lm.init(() => {
+                            if (!lm.isLocationAvailable) return browserLocation(resolve, reject);
+                            lm.getLocation((loc) => loc ? resolve([loc.latitude, loc.longitude]) : reject(new Error('Нет доступа к геопозиции')));
+                        });
+                        return;
+                    } catch (err) { /* ниже — браузерная геолокация */ }
+                }
+                browserLocation(resolve, reject);
+            });
+        }
+
+        function browserLocation(resolve, reject) {
+            if (!navigator.geolocation) return reject(new Error('Геопозиция недоступна'));
+            navigator.geolocation.getCurrentPosition(
+                (p) => resolve([p.coords.latitude, p.coords.longitude]),
+                () => reject(new Error('Нет доступа к геопозиции')),
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        }
+
+        async function howFarFromMe(btn) {
+            const target = COORDS[btn.dataset.fromMe];
+            btn.disabled = true;
+            btn.textContent = '📍 Определяем…';
+            try {
+                const me = await getMyLocation();
+                const w = walkBetween(me, target);
+                btn.textContent = w.meters > 15000 ? '📍 Вы далеко от вуза' : `📍 ${walkLabel(w)}`;
+                haptic('light');
+            } catch (err) {
+                btn.textContent = '📍 Сколько идти';
+                btn.disabled = false;
+                showToast(err.message + '. Разрешите доступ к местоположению.');
+            }
+        }
+
+        let toastTimer = null;
+        function showToast(text) {
+            let el = document.getElementById('toast');
+            if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
+            el.textContent = text;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+        }
+
         document.addEventListener('click', (e) => {
             const mapEl = e.target.closest('[data-map]');
             if (mapEl) { openMap(mapEl.dataset.map, mapEl.dataset.addr); return; }
+            const fromMe = e.target.closest('[data-from-me]');
+            if (fromMe) { if (!fromMe.disabled) howFarFromMe(fromMe); return; }
+            const shareEl = e.target.closest('[data-share]');
+            if (shareEl) { shareRoom(shareEl.dataset.share); return; }
             const roomEl = e.target.closest('[data-room]');
             if (roomEl) { selectRoom(roomEl.dataset.room); return; }
             const unitEl = e.target.closest('[data-unit]');
             if (unitEl) { selectUnit(unitEl.dataset.unit); }
         });
+
+        /* =====================================================================
+           СТУДЕНТ+ — группа, следующая пара, напоминания, избранное, оплата
+           ---------------------------------------------------------------------
+           Сервер — Cloudflare Worker (папка telegram-bot, файл worker.js).
+           Без Telegram (просто в браузере) карточка предлагает открыть бота.
+           ===================================================================== */
+        const PLUS_API = 'https://stgau-bot.vkyyfwr6w6.workers.dev';
+        const BOT_LINK = 'https://t.me/stgau_navigation_bot';
+        const DAY_MS = 86400000;
+        const DAYS_SHORT = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+        const DAYS_FULL = ['', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
+        const WEEK_LABEL = { all: 'каждую неделю', num: 'числитель', den: 'знаменатель' };
+        const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+
+        const plusCard = document.getElementById('plusCard');
+        const plusSheet = document.getElementById('plusSheet');
+        const plusBody = document.getElementById('plusBody');
+        const inTelegram = !!(tg && tg.initData);
+
+        let plusState = null;     // ответ сервера /api/me
+        let plusError = null;
+        let scheduleDraft = null; // расписание, которое староста сейчас редактирует
+
+        async function plusApi(path, body) {
+            // При урезанном интернете запрос может висеть бесконечно — обрываем через 8 секунд
+            const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+            const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+            let res;
+            try {
+                res = await fetch(PLUS_API + path, {
+                    method: body ? 'POST' : 'GET',
+                    headers: { 'Content-Type': 'application/json', 'X-Init-Data': inTelegram ? tg.initData : '' },
+                    body: body ? JSON.stringify(body) : undefined,
+                    signal: ctrl ? ctrl.signal : undefined
+                });
+            } catch (err) {
+                throw new Error('Нет связи с сервером — проверь интернет');
+            } finally {
+                clearTimeout(timer);
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Сервер недоступен');
+            return data;
+        }
+
+        // Последний ответ сервера храним на телефоне: без интернета видна следующая пара и избранное
+        let plusOffline = false;
+        const plusCacheKey = () => 'stgau-plus-' + ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 'me');
+
+        function savePlusCache(state) {
+            try { localStorage.setItem(plusCacheKey(), JSON.stringify(state)); } catch (err) { /* хранилище недоступно */ }
+        }
+
+        function readPlusCache() {
+            try { return JSON.parse(localStorage.getItem(plusCacheKey()) || 'null'); } catch (err) { return null; }
+        }
+
+        async function loadPlus() {
+            if (!inTelegram) { renderPlusCard(); return; }
+            try {
+                plusState = await plusApi('/api/me');
+                plusError = null;
+                plusOffline = false;
+                savePlusCache(plusState);
+            } catch (err) {
+                plusError = err.message;
+                const cached = readPlusCache();
+                if (cached && !plusState) plusState = cached;
+                plusOffline = !!plusState;
+            }
+            renderPlusCard();
+            if (isPlusOpen) renderPlusSheet();
+        }
+
+        /* ---------- Время и расписание (по Москве, как на сервере) ---------- */
+
+        const tzOff = () => (plusState ? plusState.tzOffsetMin : 180) * 60000;
+        const mskDate = (ts) => new Date(ts + tzOff());
+        const isoDowAt = (ts) => ((mskDate(ts).getUTCDay() + 6) % 7) + 1;
+        const fmtDay = (ts) => { const d = mskDate(ts); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
+
+        function weekTypeAt(ts) {
+            const d = mskDate(ts);
+            const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - (isoDowAt(ts) - 1) * DAY_MS;
+            const anchor = Date.parse((plusState ? plusState.numeratorMonday : '2026-08-31') + 'T00:00:00Z');
+            const weeks = Math.round((monday - anchor) / (7 * DAY_MS));
+            return ((weeks % 2) + 2) % 2 === 0 ? 'num' : 'den';
+        }
+
+        // Ближайшая пара: сегодняшняя, если началась не больше 10 минут назад, иначе следующая
+        function findNextLesson(schedule) {
+            const now = Date.now();
+            for (let i = 0; i < 8; i++) {
+                const dayTs = now + i * DAY_MS;
+                const dow = isoDowAt(dayTs);
+                if (dow === 7) continue;
+                const wt = weekTypeAt(dayTs);
+                const d = mskDate(dayTs);
+                for (const l of schedule) {
+                    if (l.d !== dow || (l.w !== 'all' && l.w !== wt)) continue;
+                    const [h, m] = l.t.split(':').map(Number);
+                    const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m) - tzOff();
+                    if (start > now - 10 * 60000) return { lesson: l, start, dayOffset: i, dow };
+                }
+            }
+            return null;
+        }
+
+        function whenLabel(next) {
+            if (next.start <= Date.now()) return `Идёт с ${next.lesson.t}`;
+            if (next.dayOffset === 0) return `Сегодня в ${next.lesson.t}`;
+            if (next.dayOffset === 1) return `Завтра в ${next.lesson.t}`;
+            return `В ${DAYS_FULL[next.dow]} в ${next.lesson.t}`;
+        }
+
+        // «ИТФ 205» → помещение из базы навигатора
+        function findRoomByText(text) {
+            const [code, ...rest] = String(text || '').trim().split(/\s+/);
+            if (!code || !rest.length) return null;
+            const nCode = normalize(code), nNum = normalize(rest.join(' '));
+            return roomsDatabase.find(r => normalize(r.unit) === nCode && r.numberNorm === nNum) || null;
+        }
+
+        function openRoomByText(text) {
+            const room = findRoomByText(text);
+            if (room) { closePlus(true); selectRoom(room.id); return true; }
+            return false;
+        }
+
+        /* ---------- Карточка на главном экране ---------- */
+
+        function renderPlusCard() {
+            plusCard.hidden = false;
+            let html;
+            if (!inTelegram) {
+                html = `
+                    <div class="plus-row" data-act="bot">
+                        <div><div class="plus-kicker">⭐ Студент+</div>
+                        <div class="plus-title">Следующая пара и напоминания</div>
+                        <div class="plus-sub">Открой навигатор в Telegram-боте</div></div>
+                        <span class="plus-chevron">›</span>
+                    </div>`;
+            } else if (!plusState) {
+                html = `<div class="plus-sub">${plusError ? '⚠️ Студент+ временно недоступен' : 'Загружаем Студент+…'}</div>`;
+            } else if (!plusState.group) {
+                html = `
+                    <div class="plus-row" data-act="open">
+                        <div><div class="plus-kicker">⭐ Студент+</div>
+                        <div class="plus-title">Выбери свою группу</div>
+                        <div class="plus-sub">${plusState.trialAvailable ? `${plusState.trialDays} дней бесплатно — следующая пара прямо здесь` : 'И здесь появится следующая пара'}</div></div>
+                        <span class="plus-chevron">›</span>
+                    </div>`;
+            } else if (!plusState.plus.active) {
+                html = `
+                    <div class="plus-row" data-act="open">
+                        <div><div class="plus-kicker">${escapeHtml(plusState.group.id)}</div>
+                        <div class="plus-title">Следующая пара скрыта 🔒</div>
+                        <div class="plus-sub">Студент+ от ${plusState.plans.month.stars} ⭐ в месяц или приведи ${plusState.ref.goal} друзей</div></div>
+                        <span class="plus-chevron">›</span>
+                    </div>`;
+            } else {
+                const schedule = plusState.group.schedule || [];
+                const next = schedule.length ? findNextLesson(schedule) : null;
+                if (next) {
+                    const room = findRoomByText(next.lesson.room);
+                    html = `
+                        <div class="plus-row" data-act="${room ? 'room' : 'open'}" data-room-text="${escapeHtml(next.lesson.room)}">
+                            <div><div class="plus-kicker">${escapeHtml(whenLabel(next))} · ${escapeHtml(plusState.group.id)}</div>
+                            <div class="plus-title">${escapeHtml(next.lesson.subj || 'Пара')}</div>
+                            <div class="plus-sub">📍 ${escapeHtml(next.lesson.room || 'кабинет не указан')}${room ? ` · ${escapeHtml(room.location)}` : ''}</div></div>
+                            <span class="plus-chevron">›</span>
+                        </div>
+                        <button class="plus-mini" data-act="open">⭐</button>`;
+                } else {
+                    html = `
+                        <div class="plus-row" data-act="open">
+                            <div><div class="plus-kicker">⭐ Студент+ · ${escapeHtml(plusState.group.id)}</div>
+                            <div class="plus-title">${plusState.group.isOwner ? 'Заполни расписание группы' : 'Расписание группы пока пустое'}</div>
+                            <div class="plus-sub">${plusState.group.isOwner ? 'Ты староста — одногруппники увидят пары сразу' : 'Его заполняет староста — тот, кто первым добавил группу'}</div></div>
+                            <span class="plus-chevron">›</span>
+                        </div>`;
+                }
+            }
+            if (plusOffline) html += `<div class="plus-offline">Нет связи — показаны сохранённые данные</div>`;
+            plusCard.innerHTML = html;
+        }
+
+        /* ---------- Окно «Студент+» ---------- */
+
+        function openPlus() {
+            if (!inTelegram) { window.open(BOT_LINK, '_blank', 'noopener'); return; }
+            if (isSearchOpen) closeFullscreenSearch(null, true);
+            isPlusOpen = true;
+            scheduleDraft = null;
+            plusSheet.classList.add('open');
+            plusSheet.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('sheet-open');
+            playSound('search-open');
+            haptic('light');
+            renderPlusSheet();
+            updateBackButton();
+        }
+
+        function closePlus(silent) {
+            if (!isPlusOpen) return;
+            isPlusOpen = false;
+            plusSheet.classList.remove('open');
+            plusSheet.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('sheet-open');
+            if (!silent) playSound('search-close');
+            updateBackButton();
+        }
+
+        const section = (title, inner) => `<section class="plus-section"><h3>${title}</h3>${inner}</section>`;
+
+        function renderPlusSheet() {
+            if (!plusState) {
+                plusBody.innerHTML = `<p class="plus-sub">${escapeHtml(plusError || 'Загружаем…')}</p>`;
+                return;
+            }
+            const s = plusState;
+            const st = s.plus;
+            const sourceLabel = { trial: 'пробный период', personal: 'твоя подписка', group: 'подписка группы' }[st.source] || '';
+            let html = '';
+
+            html += `<div class="plus-status ${st.active ? 'on' : ''}">
+                ${st.active
+                    ? `✅ Студент+ активен до ${fmtDay(st.until)}<span>${sourceLabel}</span>`
+                    : `Студент+ не активен<span>${s.trialAvailable ? `Выбери группу — ${s.trialDays} дней бесплатно` : 'Выбери тариф ниже или приведи друзей'}</span>`}
+            </div>`;
+
+            html += section('Моя группа', `
+                <div class="plus-inline">
+                    <input class="plus-input" id="plusGroupInput" placeholder="Например, ЭК-21-1" maxlength="24" value="${s.group ? escapeHtml(s.group.id) : ''}">
+                    <button class="map-btn" data-act="group">${s.group ? 'Сменить' : 'Выбрать'}</button>
+                </div>
+                ${s.group ? `<p class="plus-note">${s.group.members} чел. в группе${s.group.isOwner ? ' · ты староста' : ''}</p>` : ''}
+            `);
+
+            if (s.group && (st.active || s.group.isOwner)) html += scheduleSectionHtml();
+
+            if (st.active) {
+                const favs = s.user.favs || [];
+                html += section('Избранные кабинеты', favs.length
+                    ? `<div class="chip-row">${favs.map(f => `<button class="room-chip" data-act="fav-open" data-room-text="${escapeHtml(f)}">${escapeHtml(f)}</button>`).join('')}</div>`
+                    : `<p class="plus-note">Открой кабинет и нажми «☆ В избранное».</p>`);
+                html += section('Напоминания', `
+                    <label class="plus-switch">
+                        <span>Писать в боте за 15 минут до пары</span>
+                        <input type="checkbox" data-act="remind" ${s.user.remind ? 'checked' : ''}><i></i>
+                    </label>`);
+            }
+
+            const planBtn = (key, sub) => `
+                <button class="plus-plan" data-act="buy" data-plan="${key}">
+                    <span><b>${escapeHtml(s.plans[key].short)}</b><small>${sub}</small></span>
+                    <em>${s.plans[key].stars} ⭐</em>
+                </button>`;
+            html += section(st.active ? 'Продлить' : 'Тарифы', `
+                ${planBtn('month', '30 дней')}
+                ${planBtn('semester', 'до конца семестра · выгоднее всего')}
+                ${planBtn('year', '365 дней')}
+                ${s.group ? planBtn('group', `для первых 30 человек группы ${escapeHtml(s.group.id)}`) : ''}
+                <p class="plus-note">Оплата звёздами Telegram. Продление прибавляется к оставшемуся сроку.</p>
+            `);
+
+            const done = s.ref.count % s.ref.goal;
+            html += section('Приведи друзей', `
+                <p class="plus-note">Когда ${s.ref.goal} друга выберут группу — получишь ${s.ref.bonusDays} дней Студент+. Сейчас: <b>${done} из ${s.ref.goal}</b>${s.ref.count >= s.ref.goal ? ` · всего приглашено ${s.ref.count}` : ''}</p>
+                <div class="plus-progress"><i style="width:${Math.round(done / s.ref.goal * 100)}%"></i></div>
+                <button class="map-btn plus-wide" data-act="share">📤 Поделиться ссылкой</button>
+            `);
+
+            plusBody.innerHTML = html;
+        }
+
+        function scheduleSectionHtml() {
+            const s = plusState;
+            const editable = s.group.isOwner;
+            const list = scheduleDraft || s.group.schedule || [];
+            const rows = list.map((l, i) => `
+                <div class="lesson-row">
+                    <span class="lesson-day">${DAYS_SHORT[l.d]}<b>${escapeHtml(l.t)}</b></span>
+                    <span class="lesson-main" ${findRoomByText(l.room) ? `data-act="fav-open" data-room-text="${escapeHtml(l.room)}"` : ''}>
+                        ${escapeHtml(l.subj || 'Пара')}
+                        <small>📍 ${escapeHtml(l.room || '—')}${l.w !== 'all' ? ` · ${WEEK_LABEL[l.w]}` : ''}</small>
+                    </span>
+                    ${editable ? `<button class="lesson-del" data-act="lesson-del" data-i="${i}" aria-label="Удалить">✕</button>` : ''}
+                </div>`).join('');
+
+            let form = '';
+            if (editable) {
+                const unitOptions = UNITS.filter(u => !u.place).map(u => `<option value="${escapeHtml(u.code)}">${escapeHtml(u.code)}</option>`).join('');
+                form = `
+                    <div class="lesson-form">
+                        <select class="plus-input" id="lfDay">${DAYS_SHORT.slice(1).map((d, i) => `<option value="${i + 1}">${d}</option>`).join('')}</select>
+                        <input class="plus-input" id="lfTime" type="time" value="08:00">
+                        <select class="plus-input" id="lfUnit">${unitOptions}</select>
+                        <input class="plus-input" id="lfRoom" placeholder="Кабинет" list="lfRooms" maxlength="20">
+                        <datalist id="lfRooms"></datalist>
+                        <input class="plus-input lf-wide" id="lfSubj" placeholder="Предмет" maxlength="80">
+                        <select class="plus-input lf-wide" id="lfWeek">
+                            <option value="all">Каждую неделю</option>
+                            <option value="num">Числитель</option>
+                            <option value="den">Знаменатель</option>
+                        </select>
+                        <button class="map-btn lf-wide" data-act="lesson-add">＋ Добавить пару</button>
+                    </div>
+                    ${scheduleDraft ? `<button class="map-btn plus-wide plus-save" data-act="schedule-save">Сохранить расписание</button>` : ''}`;
+            }
+
+            return section(`Расписание ${escapeHtml(s.group.id)}`, `
+                <p class="plus-note">Сейчас ${weekTypeAt(Date.now()) === 'num' ? 'числитель' : 'знаменатель'}.${editable ? ' Ты староста — расписание увидят все в группе.' : ''}</p>
+                ${rows || '<p class="plus-note">Пар пока нет.</p>'}
+                ${form}
+            `);
+        }
+
+        function fillRoomList() {
+            const unitSel = document.getElementById('lfUnit');
+            const dl = document.getElementById('lfRooms');
+            if (!unitSel || !dl) return;
+            dl.innerHTML = roomsDatabase.filter(r => r.unit === unitSel.value)
+                .map(r => `<option value="${escapeHtml(r.number)}">`).join('');
+        }
+
+        /* ---------- Избранное (кнопка в панели маршрута) ---------- */
+
+        const favKey = (room) => `${room.unit} ${room.number}`;
+
+        function favButtonHtml(room) {
+            if (!inTelegram || room.unitPlace) return '';
+            const on = !!(plusState && plusState.user.favs.includes(favKey(room)));
+            return `<button class="map-btn plus-wide fav-btn" data-act="fav" data-room-text="${escapeHtml(favKey(room))}">${on ? '★ В избранном' : '☆ В избранное'}</button>`;
+        }
+
+        async function toggleFav(btn) {
+            if (!plusState || !plusState.plus.active) { openPlus(); return; }
+            const key = btn.dataset.roomText;
+            const favs = plusState.user.favs.slice();
+            const i = favs.indexOf(key);
+            if (i > -1) favs.splice(i, 1); else favs.unshift(key);
+            plusState.user.favs = favs;
+            btn.textContent = i > -1 ? '☆ В избранное' : '★ В избранном';
+            haptic('light');
+            try { await plusApi('/api/favs', { favs }); } catch (err) { showPlusToast(err.message); }
+        }
+
+        /* ---------- Действия ---------- */
+
+        function showPlusToast(text) {
+            if (tg && typeof tg.showAlert === 'function' && tgSupports('6.2')) { try { tg.showAlert(text); return; } catch (err) { /* ниже */ } }
+            alert(text);
+        }
+
+        async function plusAction(el) {
+            const act = el.dataset.act;
+            if (act === 'close') return closePlus();
+            if (act === 'bot') return window.open(BOT_LINK, '_blank', 'noopener');
+            if (act === 'open') return openPlus();
+            if (act === 'room' || act === 'fav-open') {
+                if (!openRoomByText(el.dataset.roomText)) showPlusToast('Такого кабинета нет в навигаторе');
+                return;
+            }
+            if (act === 'fav') return toggleFav(el);
+
+            if (act === 'group') {
+                const name = document.getElementById('plusGroupInput').value;
+                el.disabled = true;
+                try {
+                    plusState = await plusApi('/api/group', { name });
+                    haptic('medium');
+                    renderPlusCard(); renderPlusSheet();
+                } catch (err) { showPlusToast(err.message); el.disabled = false; }
+                return;
+            }
+
+            if (act === 'buy') {
+                if (!tgSupports('6.1') || typeof tg.openInvoice !== 'function') return showPlusToast('Обнови Telegram, чтобы оплатить');
+                el.disabled = true;
+                try {
+                    const { link } = await plusApi('/api/invoice', { plan: el.dataset.plan });
+                    tg.openInvoice(link, (status) => {
+                        el.disabled = false;
+                        if (status === 'paid') {
+                            haptic('heavy');
+                            playSound('optimize-off');
+                            setTimeout(loadPlus, 1500);   // ждём, пока сервер получит платёж от Telegram
+                        }
+                    });
+                } catch (err) { showPlusToast(err.message); el.disabled = false; }
+                return;
+            }
+
+            if (act === 'share') {
+                const url = `https://t.me/share/url?url=${encodeURIComponent(plusState.ref.link)}&text=${encodeURIComponent('Навигатор по корпусам СтГАУ — найди любой кабинет за пару секунд 🧭')}`;
+                try { tg.openTelegramLink(url); } catch (err) { window.open(url, '_blank', 'noopener'); }
+                return;
+            }
+
+            if (act === 'lesson-del') {
+                scheduleDraft = (scheduleDraft || plusState.group.schedule.slice());
+                scheduleDraft.splice(Number(el.dataset.i), 1);
+                renderPlusSheet();
+                return;
+            }
+
+            if (act === 'lesson-add') {
+                const v = (id) => document.getElementById(id).value.trim();
+                if (!v('lfTime')) return showPlusToast('Укажи время пары');
+                const room = v('lfRoom') ? `${v('lfUnit')} ${v('lfRoom')}` : '';
+                scheduleDraft = (scheduleDraft || plusState.group.schedule.slice());
+                scheduleDraft.push({ d: Number(v('lfDay')), t: v('lfTime'), room, subj: v('lfSubj'), w: v('lfWeek') });
+                scheduleDraft.sort((a, b) => a.d - b.d || a.t.localeCompare(b.t));
+                const keep = { d: v('lfDay'), t: v('lfTime'), unit: v('lfUnit'), w: v('lfWeek') };
+                renderPlusSheet();
+                // оставляем день/время/корпус — удобно вбивать пары подряд
+                document.getElementById('lfDay').value = keep.d;
+                document.getElementById('lfTime').value = keep.t;
+                document.getElementById('lfUnit').value = keep.unit;
+                document.getElementById('lfWeek').value = keep.w;
+                fillRoomList();
+                return;
+            }
+
+            if (act === 'schedule-save') {
+                el.disabled = true;
+                try {
+                    plusState = await plusApi('/api/schedule', { schedule: scheduleDraft });
+                    scheduleDraft = null;
+                    haptic('medium');
+                    renderPlusCard(); renderPlusSheet();
+                } catch (err) { showPlusToast(err.message); el.disabled = false; }
+            }
+        }
+
+        plusCard.addEventListener('click', (e) => {
+            const el = e.target.closest('[data-act]');
+            if (el) plusAction(el);
+        });
+        plusSheet.addEventListener('click', (e) => {
+            if (e.target === plusSheet) return closePlus();
+            const el = e.target.closest('[data-act]');
+            if (el && el.tagName !== 'INPUT') plusAction(el);
+        });
+        plusSheet.addEventListener('change', async (e) => {
+            if (e.target.id === 'lfUnit') return fillRoomList();
+            if (e.target.dataset.act === 'remind') {
+                try { await plusApi('/api/remind', { on: e.target.checked }); plusState.user.remind = e.target.checked; }
+                catch (err) { e.target.checked = !e.target.checked; showPlusToast(err.message); }
+            }
+        });
+        // Кнопка «☆ В избранное» живёт в панели маршрута
+        document.getElementById('routeContent').addEventListener('click', (e) => {
+            const el = e.target.closest('[data-act="fav"]');
+            if (el) toggleFav(el);
+        });
+
+        // Карточка «следующая пара» сама обновляется раз в минуту
+        setInterval(() => { if (plusState) renderPlusCard(); }, 60000);
+
+        loadPlus().then(() => {
+            // Ссылки из напоминаний: #room=ИТФ%20205 — сразу открыть кабинет; #plus — открыть окно
+            const hash = decodeURIComponent(location.hash || '');
+            if (hash.startsWith('#room=')) openRoomByText(hash.slice(6));
+            else if (hash === '#plus') openPlus();
+        });
+        fillRoomList();
+
+        /* =====================================================================
+           ОФЛАЙН-РЕЖИМ: sw.js сохраняет сайт на телефоне после первого открытия
+           ===================================================================== */
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            navigator.serviceWorker.register('sw.js').catch(() => { /* нет поддержки — работаем как раньше */ });
+        }
+
+        const headerSub = document.getElementById('headerSub');
+        const headerSubText = headerSub.textContent;
+
+        function updateOnlineState() {
+            const offline = navigator.onLine === false;
+            headerSub.textContent = offline ? '📴 Офлайн — поиск и маршруты работают без интернета' : headerSubText;
+            headerSub.classList.toggle('is-offline', offline);
+            if (!offline && inTelegram && plusOffline) loadPlus();   // связь вернулась — обновляем Студент+
+        }
+        window.addEventListener('online', updateOnlineState);
+        window.addEventListener('offline', updateOnlineState);
+        updateOnlineState();
     </script>
 </body>
 </html>
