@@ -714,6 +714,7 @@
         .plus-input::placeholder { color: var(--ios-label-3); }
         select.plus-input { cursor: pointer; }
         .plus-wide { width: 100%; margin-top: 8px; }
+        .plus-logout { margin-top: 22px; opacity: 0.7; }
         .plus-save { background: #fff; color: var(--bg-main); }
         .fav-btn { margin-top: 10px; }
 
@@ -846,7 +847,11 @@
 
         const tgSupports = (version) => !!(tg && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast(version));
 
+        // Приложение для Android добавляет в страницу мостик window.StgauApp
+        const androidApp = window.StgauApp || null;
+
         function haptic(style) {
+            if (androidApp && !(tg && tg.initData)) { try { androidApp.haptic(String(style)); } catch (err) { /* старая версия приложения */ } return; }
             if (!tgSupports('6.1')) return;
             try { tg.HapticFeedback.impactOccurred(style); } catch (err) { /* нет поддержки — молчим */ }
         }
@@ -1380,6 +1385,13 @@
             }
         }
 
+        // Приложение для Android спрашивает: есть что закрыть? Иначе оно сворачивается
+        window.__stgauBack = () => {
+            if (!(isSearchOpen || isDetailsOpen || isPlusOpen)) return false;
+            handleBack();
+            return true;
+        };
+
         if (tgSupports('6.1')) {
             try { tg.BackButton.onClick(handleBack); } catch (err) { /* нет поддержки */ }
         }
@@ -1698,6 +1710,9 @@
             if (tg && typeof tg.openTelegramLink === 'function' && tg.initData) {
                 try { tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`); return; } catch (err) { /* ниже */ }
             }
+            if (androidApp && !(tg && tg.initData)) {
+                try { androidApp.share(`${text}\n${url}`); return; } catch (err) { /* ниже */ }
+            }
             if (navigator.share) {
                 try { await navigator.share({ title: room.title, text, url }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
             }
@@ -1786,6 +1801,13 @@
         const plusBody = document.getElementById('plusBody');
         const inTelegram = !!(tg && tg.initData);
 
+        // Вне Telegram (приложение для Android, сайт в браузере) входим через бота: он выдаёт токен
+        const APP_TOKEN_KEY = 'stgau-app-token';
+        let appToken = '';
+        if (!inTelegram) { try { appToken = localStorage.getItem(APP_TOKEN_KEY) || ''; } catch (err) { /* хранилище недоступно */ } }
+        let authed = inTelegram || !!appToken;
+        let loginWait = null;    // { code, timer, until } — ждём подтверждения входа в боте
+
         let plusState = null;     // ответ сервера /api/me
         let plusError = null;
 
@@ -1797,7 +1819,7 @@
             try {
                 res = await fetch(PLUS_API + path, {
                     method: body ? 'POST' : 'GET',
-                    headers: { 'Content-Type': 'application/json', 'X-Init-Data': inTelegram ? tg.initData : '' },
+                    headers: { 'Content-Type': 'application/json', 'X-Init-Data': inTelegram ? tg.initData : '', 'X-App-Token': appToken },
                     body: body ? JSON.stringify(body) : undefined,
                     signal: ctrl ? ctrl.signal : undefined
                 });
@@ -1807,9 +1829,80 @@
                 clearTimeout(timer);
             }
             const data = await res.json().catch(() => ({}));
+            if (res.status === 401 && !inTelegram && data.login) setAppToken('');   // вход отозвали — просим войти заново
             if (!res.ok) throw new Error(data.error || 'Сервер недоступен');
             return data;
         }
+
+        function setAppToken(token) {
+            appToken = token;
+            authed = inTelegram || !!token;
+            try { token ? localStorage.setItem(APP_TOKEN_KEY, token) : localStorage.removeItem(APP_TOKEN_KEY); } catch (err) { /* хранилище недоступно */ }
+            if (!token) {
+                plusState = null;
+                raspWeeks = {};
+                try { localStorage.removeItem(plusCacheKey()); } catch (err) { /* хранилище недоступно */ }
+            }
+        }
+
+        function randomCode() {
+            const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+            const bytes = new Uint8Array(32);
+            (window.crypto || window.msCrypto).getRandomValues(bytes);
+            return Array.from(bytes, b => abc[b % abc.length]).join('');
+        }
+
+        // «Войти через Telegram»: открываем бота с одноразовым кодом и ждём, пока студент нажмёт «Да, войти»
+        function startLogin() {
+            stopLogin();
+            const code = randomCode();
+            loginWait = { code, until: Date.now() + 10 * 60000, timer: null };
+            openUrl(`${BOT_LINK}?start=login_${code}`);
+            renderPlusCard();
+            pollLogin();
+        }
+
+        function stopLogin() {
+            if (loginWait) clearTimeout(loginWait.timer);
+            loginWait = null;
+        }
+
+        async function pollLogin() {
+            const wait = loginWait;
+            if (!wait) return;
+            clearTimeout(wait.timer);
+            if (Date.now() > wait.until) { stopLogin(); renderPlusCard(); return; }
+            try {
+                const data = await plusApi('/api/login?code=' + wait.code);
+                if (data.token && loginWait === wait) {
+                    stopLogin();
+                    setAppToken(data.token);
+                    haptic('heavy');
+                    playSound('optimize-off');
+                    showToast('Готово, ты вошёл ✅');
+                    await loadPlus();
+                    loadRaspAll();
+                    return;
+                }
+            } catch (err) { /* нет связи — попробуем ещё */ }
+            if (loginWait === wait) wait.timer = setTimeout(pollLogin, 2500);
+        }
+
+        async function logout() {
+            if (!confirm('Выйти из аккаунта на этом устройстве?')) return;
+            try { await plusApi('/api/logout', {}); } catch (err) { /* токен всё равно забываем */ }
+            setAppToken('');
+            closePlus();
+            renderPlusCard();
+        }
+
+        // Вернулись из Telegram (после входа или оплаты) — сразу проверяем
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible' || inTelegram) return;
+            if (loginWait) pollLogin();
+            else if (authed && plusPayPending) { plusPayPending = false; setTimeout(loadPlus, 1500); }
+        });
+        let plusPayPending = false;
 
         // Последний ответ сервера храним на телефоне: без интернета видна следующая пара и избранное
         let plusOffline = false;
@@ -1824,7 +1917,7 @@
         }
 
         async function loadPlus() {
-            if (!inTelegram) { renderPlusCard(); return; }
+            if (!authed) { renderPlusCard(); return; }
             try {
                 plusState = await plusApi('/api/me');
                 plusError = null;
@@ -1870,7 +1963,7 @@
         }
 
         async function loadRasp(offset) {
-            if (!inTelegram || !plusState || !plusState.group) return;
+            if (!authed || !plusState || !plusState.group) return;
             try {
                 raspWeeks[offset] = await plusApi('/api/rasp?week=' + offset);
                 saveRaspCache();
@@ -1936,12 +2029,20 @@
         function renderPlusCard() {
             plusCard.hidden = false;
             let html;
-            if (!inTelegram) {
+            if (!authed && loginWait) {
                 html = `
-                    <div class="plus-row" data-act="bot">
+                    <div class="plus-row" data-act="login">
+                        <div><div class="plus-kicker">🔐 Вход через Telegram</div>
+                        <div class="plus-title">Подтверди вход в боте</div>
+                        <div class="plus-sub">Нажми «✅ Да, войти» в боте и вернись сюда. Бот не открылся? Нажми ещё раз</div></div>
+                        <span class="plus-chevron">›</span>
+                    </div>`;
+            } else if (!authed) {
+                html = `
+                    <div class="plus-row" data-act="login">
                         <div><div class="plus-kicker">📅 Расписание и ⭐ Студент+</div>
-                        <div class="plus-title">Твои пары и напоминания</div>
-                        <div class="plus-sub">Открой навигатор в Telegram-боте</div></div>
+                        <div class="plus-title">Войти через Telegram</div>
+                        <div class="plus-sub">Пары, избранное и напоминания — как в боте</div></div>
                         <span class="plus-chevron">›</span>
                     </div>`;
             } else if (!plusState) {
@@ -1990,7 +2091,7 @@
         /* ---------- Окна «Расписание» и «Студент+» ---------- */
 
         function openSheet(mode) {
-            if (!inTelegram) { window.open(BOT_LINK, '_blank', 'noopener'); return; }
+            if (!authed) { startLogin(); return; }
             if (isSearchOpen) closeFullscreenSearch(null, true);
             sheetMode = mode;
             document.getElementById('sheetTitle').textContent = mode === 'rasp' ? 'Расписание' : 'Студент+';
@@ -2136,6 +2237,8 @@
                 <button class="map-btn plus-wide" data-act="share">📤 Поделиться ссылкой</button>
             `);
 
+            if (!inTelegram) html += `<button class="map-btn plus-wide plus-logout" data-act="logout">Выйти из аккаунта</button>`;
+
             plusBody.innerHTML = html;
         }
 
@@ -2144,7 +2247,7 @@
         const favKey = (room) => `${room.unit} ${room.number}`;
 
         function favButtonHtml(room) {
-            if (!inTelegram || room.unitPlace) return '';
+            if (!authed || room.unitPlace) return '';
             const on = !!(plusState && plusState.user.favs.includes(favKey(room)));
             return `<button class="map-btn plus-wide fav-btn" data-act="fav" data-room-text="${escapeHtml(favKey(room))}">${on ? '★ В избранном' : '☆ В избранное'}</button>`;
         }
@@ -2171,7 +2274,9 @@
         async function plusAction(el) {
             const act = el.dataset.act;
             if (act === 'close') return closePlus();
-            if (act === 'bot') return window.open(BOT_LINK, '_blank', 'noopener');
+            if (act === 'bot') return openUrl(BOT_LINK);
+            if (act === 'login') return startLogin();
+            if (act === 'logout') return logout();
             if (act === 'open') return openPlus();
             if (act === 'rasp') return isPlusOpen ? (sheetMode = 'rasp', document.getElementById('sheetTitle').textContent = 'Расписание', loadGroupDir(), renderSheet()) : openRasp();
             if (act === 'room' || act === 'fav-open') {
@@ -2203,6 +2308,17 @@
                 return;
             }
 
+            if (act === 'buy' && !inTelegram) {
+                // Вне Telegram счёт открывается в самом Telegram, а мы проверим оплату, когда студент вернётся
+                el.disabled = true;
+                try {
+                    const { link } = await plusApi('/api/invoice', { plan: el.dataset.plan });
+                    plusPayPending = true;
+                    openUrl(link);
+                } catch (err) { showPlusToast(err.message); }
+                el.disabled = false;
+                return;
+            }
             if (act === 'buy') {
                 if (!tgSupports('6.1') || typeof tg.openInvoice !== 'function') return showPlusToast('Обнови Telegram, чтобы оплатить');
                 el.disabled = true;
@@ -2287,7 +2403,7 @@
             const offline = navigator.onLine === false;
             headerSub.textContent = offline ? '📴 Офлайн — поиск и маршруты работают без интернета' : headerSubText;
             headerSub.classList.toggle('is-offline', offline);
-            if (!offline && inTelegram && plusOffline) loadPlus();   // связь вернулась — обновляем Студент+
+            if (!offline && authed && plusOffline) loadPlus();   // связь вернулась — обновляем Студент+
         }
         window.addEventListener('online', updateOnlineState);
         window.addEventListener('offline', updateOnlineState);
