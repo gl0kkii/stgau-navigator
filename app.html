@@ -1866,7 +1866,7 @@
             loginWait = { code, until: Date.now() + 10 * 60000, timer: null };
             openUrl(`${BOT_LINK}?start=login_${code}`);
             renderPlusCard();
-            loginWait.timer = setTimeout(pollLogin, 15000);
+            loginWait.timer = setTimeout(pollLogin, 20000);
         }
 
         function stopLogin() {
@@ -1879,6 +1879,8 @@
             if (!wait) return;
             clearTimeout(wait.timer);
             if (Date.now() > wait.until) { stopLogin(); renderPlusCard(); return; }
+            // Пока студент в Telegram, сервер не дёргаем — спросим, когда вернётся
+            if (document.hidden || appPaused) { wait.timer = setTimeout(pollLogin, 4000); return; }
             try {
                 const data = await plusApi('/api/login?code=' + wait.code);
                 if (data.token && loginWait === wait) {
@@ -1910,7 +1912,9 @@
             else if (authed && plusPayPending) { plusPayPending = false; setTimeout(loadPlus, 1500); }
         }
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onReturn(); });
-        window.__stgauResume = onReturn;   // приложение для Android зовёт при возврате на экран
+        let appPaused = false;   // приложение для Android свернули (вкладка при этом может считаться видимой)
+        window.__stgauPause = () => { appPaused = true; };
+        window.__stgauResume = () => { appPaused = false; onReturn(); };   // приложение зовёт при возврате на экран
         let plusPayPending = false;
 
         // Последний ответ сервера храним на телефоне: без интернета видна следующая пара и избранное
