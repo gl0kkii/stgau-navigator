@@ -667,6 +667,8 @@
 
         body.sheet-open { overflow: hidden; }
         body.sheet-open .optimize-btn { opacity: 0; pointer-events: none; }
+        .page-foot { margin: 18px 0 72px; text-align: center; font-size: 12px; }
+        .page-foot a { color: var(--text-secondary); text-decoration: none; }
         .plus-sheet {
             position: fixed; inset: 0; z-index: 1100;
             background: rgba(0, 0, 0, 0.45);
@@ -820,6 +822,8 @@
             </p>
         </div>
     </div>
+
+    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
