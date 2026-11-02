@@ -1852,14 +1852,21 @@
             return Array.from(bytes, b => abc[b % abc.length]).join('');
         }
 
-        // «Войти через Telegram»: открываем бота с одноразовым кодом и ждём, пока студент нажмёт «Да, войти»
+        // «Войти через Telegram»: открываем бота с одноразовым кодом и ждём, пока студент нажмёт «Да, войти».
+        // Сервер спрашиваем, когда студент вернулся из Telegram: хранилище Cloudflare до 30 секунд помнит
+        // ответ «ещё не подтверждено», поэтому частые запросы до подтверждения только замедлили бы вход.
         function startLogin() {
+            if (loginWait && Date.now() < loginWait.until) {
+                // Бот не открылся или студент вернулся сам — открываем того же бота с тем же кодом
+                openUrl(`${BOT_LINK}?start=login_${loginWait.code}`);
+                return;
+            }
             stopLogin();
             const code = randomCode();
             loginWait = { code, until: Date.now() + 10 * 60000, timer: null };
             openUrl(`${BOT_LINK}?start=login_${code}`);
             renderPlusCard();
-            pollLogin();
+            loginWait.timer = setTimeout(pollLogin, 15000);
         }
 
         function stopLogin() {
@@ -1885,7 +1892,7 @@
                     return;
                 }
             } catch (err) { /* нет связи — попробуем ещё */ }
-            if (loginWait === wait) wait.timer = setTimeout(pollLogin, 2500);
+            if (loginWait === wait) wait.timer = setTimeout(pollLogin, 4000);
         }
 
         async function logout() {
@@ -1897,11 +1904,13 @@
         }
 
         // Вернулись из Telegram (после входа или оплаты) — сразу проверяем
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState !== 'visible' || inTelegram) return;
+        function onReturn() {
+            if (inTelegram) return;
             if (loginWait) pollLogin();
             else if (authed && plusPayPending) { plusPayPending = false; setTimeout(loadPlus, 1500); }
-        });
+        }
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onReturn(); });
+        window.__stgauResume = onReturn;   // приложение для Android зовёт при возврате на экран
         let plusPayPending = false;
 
         // Последний ответ сервера храним на телефоне: без интернета видна следующая пара и избранное
