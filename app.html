@@ -774,9 +774,166 @@
         .android .bubble-1 { background: radial-gradient(closest-side, #ffffff 30%, rgba(255, 255, 255, 0) 100%); }
         .android .bubble-2 { background: radial-gradient(closest-side, #8e8e93 30%, rgba(142, 142, 147, 0) 100%); }
         .android .bubble-3 { background: radial-gradient(closest-side, #aeaeb2 30%, rgba(174, 174, 178, 0) 100%); }
+        /* =====================================================================
+           СЛОЙ АНИМАЦИЙ: все анимации этого слоя двигают только transform и opacity,
+           поэтому не должны тормозить на Android. Кнопка «Оптимизация» и системная настройка
+           «уменьшить движение» выключают слой целиком.
+           ===================================================================== */
+        :root { --wow-spring: cubic-bezier(0.34, 1.56, 0.64, 1); --wow-out: cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* --- Заставка --- */
+        .wow-intro-screen {
+            position: fixed; inset: 0; z-index: 3000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle at 50% 40%, #161922 0%, #090a0f 70%);
+            cursor: pointer; overflow: hidden;
+            /* Страховка: заставка исчезнет сама, даже если скрипт не сработал */
+            animation: wowIntroFailsafe 0.3s linear 6s forwards;
+        }
+        @keyframes wowIntroFailsafe { to { opacity: 0; visibility: hidden; } }
+        body.wow-intro > *:not(.wow-intro-screen) { animation-play-state: paused !important; }
+        .wow-logo { position: relative; width: 190px; height: 190px; transform-origin: 50% 43.46%; }
+        .wow-logo svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+        .wow-pin-line { fill: none; stroke: #fff; stroke-width: 6; stroke-dasharray: 1; stroke-dashoffset: 1; animation: wowDraw 0.8s cubic-bezier(0.6, 0, 0.3, 1) 0.1s forwards; }
+        .wow-pin-fill { opacity: 0; animation: wowFade 0.35s ease 0.75s forwards; }
+        .wow-hole { transform-box: fill-box; transform-origin: center; transform: scale(0); animation: wowPop 0.55s var(--wow-spring) 0.8s forwards; }
+        .wow-temple > * { transform-box: fill-box; opacity: 0; animation: wowBuild 0.45s var(--wow-spring) forwards; }
+        .wow-temple .up { transform-origin: 50% 100%; }
+        .wow-temple .wide { transform-origin: 50% 50%; }
+        @keyframes wowDraw { to { stroke-dashoffset: 0; } }
+        @keyframes wowFade { to { opacity: 1; } }
+        @keyframes wowPop { to { transform: scale(1); } }
+        @keyframes wowBuild { from { opacity: 0; transform: scale(0.4, 0); } to { opacity: 1; transform: none; } }
+        .wow-ring { position: absolute; left: 50%; top: 43.46%; width: 190px; height: 190px; margin: -95px 0 0 -95px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.5); opacity: 0; animation: wowSonar 1.5s var(--wow-out) forwards; }
+        @keyframes wowSonar { 0% { opacity: 0.8; transform: scale(0.4); } 100% { opacity: 0; transform: scale(3.4); } }
+        .wow-word { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 10px; margin-top: 26px; padding: 0 16px; font-size: 30px; font-weight: 700; color: #fff; }
+        .wow-word span { display: inline-flex; }
+        .wow-word i { font-style: normal; opacity: 0; transform: translate3d(0, 22px, 0) scale(0.8); animation: wowLetter 0.6s var(--wow-spring) forwards; }
+        @keyframes wowLetter { to { opacity: 1; transform: none; } }
+        .wow-intro-screen.leaving { animation: wowIntroOut 0.45s ease 0.3s forwards; pointer-events: none; }
+        @keyframes wowIntroOut { to { opacity: 0; visibility: hidden; } }
+        .leaving .wow-word { opacity: 0; transition: opacity 0.15s; }
+        .leaving .wow-temple, .leaving .wow-ring { opacity: 0; transition: opacity 0.12s; }
+        .leaving .wow-logo { transition: transform 0.75s cubic-bezier(0.7, 0, 0.3, 1); transform: scale(var(--wow-zoom, 24)); }
+
+        /* --- Живой фон: созвездие-карта --- */
+        .wow-sky { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        body.optimized .wow-sky { display: none; }
+
+        /* --- Заголовок --- */
+        html.wow body.wow-go .header h1 { background: linear-gradient(100deg, #fff 40%, #8e8e93 50%, #fff 60%); background-size: 300% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: wowTitleSheen 1.5s ease 0.2s forwards; }
+        @keyframes wowTitleSheen { to { background-position: 0 0; } }
+
+        /* --- Карточки подразделений: вылет с поворотом, волной --- */
+        html.wow body.wow-go:not(.optimized) .units .glass-card { animation: wowCardIn 0.85s var(--wow-spring) backwards; animation-delay: calc(var(--i) * 55ms); }
+        @keyframes wowCardIn { from { opacity: 0; transform: perspective(700px) rotateX(-75deg) translate3d(0, 34px, 0) scale(0.82); } }
+        html.wow body:not(.optimized) .glass-card { transition: transform 0.6s var(--wow-spring), border-color 0.4s ease, background 0.4s ease; }
+        html.wow body:not(.optimized) .glass-card:active { transition-duration: 0.1s; }
+
+        /* Пятно света под пальцем */
+        html.wow body:not(.optimized) .glass-card::after {
+            content: ''; position: absolute; left: var(--mx, 50%); top: var(--my, 50%); width: 180px; height: 180px; margin: -90px 0 0 -90px;
+            background: radial-gradient(closest-side, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+            opacity: 0; transform: scale(0.5); transition: opacity 0.5s ease, transform 0.5s var(--wow-out); pointer-events: none;
+        }
+        html.wow body:not(.optimized) .glass-card:active::after { opacity: 1; transform: scale(1); transition-duration: 0.08s; }
+
+        /* Блик по выбранной карточке */
+        html.wow body:not(.optimized) .glass-card.is-active::before {
+            content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 45%;
+            background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+            transform: translate3d(-130%, 0, 0) skewX(-14deg); animation: wowSweep 0.9s var(--wow-out) forwards; pointer-events: none;
+        }
+        @keyframes wowSweep { to { transform: translate3d(330%, 0, 0) skewX(-14deg); } }
+
+        /* Волна от касания */
+        .wow-ripple { position: fixed; z-index: 2500; width: 170px; height: 170px; margin: -85px 0 0 -85px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.55); pointer-events: none; animation: wowRipple 0.7s var(--wow-out) forwards; }
+        @keyframes wowRipple { from { opacity: 0.9; transform: scale(0.1); } to { opacity: 0; transform: scale(1); } }
+
+        /* --- Каскад содержимого --- */
+        .wow-in { animation: wowRise 0.6s var(--wow-out) backwards; }
+        @keyframes wowRise { from { opacity: 0; transform: translate3d(0, 16px, 0); } }
+        .wow-pop { animation: wowChip 0.5s var(--wow-spring) backwards; }
+        @keyframes wowChip { from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.6); } }
+        .wow-slide { animation: wowSlide 0.55s var(--wow-out) backwards; }
+        @keyframes wowSlide { from { opacity: 0; transform: translate3d(-22px, 0, 0); } }
+
+        /* --- Поиск: мягкое свечение рамки --- */
+        html.wow body:not(.optimized) .search-wrapper.fullscreen .search-box { animation: wowSearchPulse 0.8s var(--wow-out); }
+        @keyframes wowSearchPulse { 0% { transform: scale(0.97); } 45% { transform: scale(1.015); } 100% { transform: none; } }
+
+        /* --- 3D-корпус с нужным этажом --- */
+        @media (max-width: 560px) {
+            html.wow .content-layout.active-details .info-route-panel { max-height: 1000px; }
+        }
+        .wow-tower { position: relative; height: max(150px, calc(72px + var(--floors) * 20px)); margin: -4px 0 8px; overflow: hidden; }
+        .wow-scene { position: absolute; inset: 0; perspective: 900px; perspective-origin: 50% 30%; }
+        .wow-stack { position: absolute; left: 50%; bottom: 18px; width: 92px; height: 92px; margin-left: -46px; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(45deg); }
+        .wow-slab { position: absolute; inset: 0; transform-style: preserve-3d; transform: translate3d(0, 0, calc(var(--n) * 22px)); transition: transform 0.7s var(--wow-spring), opacity 0.45s ease; animation: wowSlabIn 0.6s var(--wow-spring) backwards; animation-delay: calc(var(--n) * 75ms); }
+        @keyframes wowSlabIn { from { opacity: 0; transform: translate3d(0, 0, calc(var(--n) * 22px - 70px)); } }
+        .wow-slab i { position: absolute; display: block; }
+        .wow-slab .top { inset: 0; background: rgba(255, 255, 255, 0.11); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 5px; }
+        .wow-slab .fr { left: 0; top: 100%; width: 100%; height: 13px; background: rgba(255, 255, 255, 0.16); transform-origin: top; transform: rotateX(-90deg); }
+        .wow-slab .rt { left: 100%; top: 0; width: 13px; height: 100%; background: rgba(255, 255, 255, 0.07); transform-origin: left; transform: rotateY(90deg); }
+        .wow-stack.is-open .wow-slab.is-above { transform: translate3d(0, 0, calc(var(--n) * 22px + 26px)); opacity: 0.3; }
+        .wow-stack.is-open .wow-slab.is-below { opacity: 0.45; }
+        .wow-stack.is-open .wow-slab.is-target { transform: translate3d(42px, -42px, calc(var(--n) * 22px)); }
+        .wow-slab.is-target .top { transition: background 0.4s ease, box-shadow 0.4s ease; }
+        .wow-stack.is-open .wow-slab.is-target .top { background: rgba(255, 255, 255, 0.92); border-color: #fff; box-shadow: 0 0 30px rgba(255, 255, 255, 0.55); }
+        .wow-stack.is-open .wow-slab.is-target .fr { background: rgba(255, 255, 255, 0.6); }
+        .wow-stack.is-open .wow-slab.is-target .rt { background: rgba(255, 255, 255, 0.32); }
+        .wow-landing { left: 50%; top: 50%; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%; border: 2px solid rgba(9, 10, 15, 0.75); opacity: 0; transform: translateZ(1px); }
+        .wow-landing.go { animation: wowLanding 1.1s var(--wow-out) forwards; }
+        @keyframes wowLanding { from { opacity: 1; transform: translateZ(1px) scale(0.1); } to { opacity: 0; transform: translateZ(1px) scale(1.5); } }
+        .wow-marker { position: absolute; left: 50%; top: 50%; width: 34px; height: 46px; margin: -46px 0 0 -17px; transform-style: preserve-3d; transform-origin: 50% 100%; opacity: 0; transform: translateZ(150px) rotateZ(-45deg) rotateX(-58deg); }
+        .wow-marker.go { animation: wowPinDrop 0.75s cubic-bezier(0.4, 0, 0.6, 1) forwards; }
+        @keyframes wowPinDrop {
+            0% { opacity: 0; transform: translateZ(150px) rotateZ(-45deg) rotateX(-58deg); }
+            20% { opacity: 1; }
+            62% { transform: translateZ(1px) rotateZ(-45deg) rotateX(-58deg) scale(1.1, 0.85); }
+            80% { transform: translateZ(16px) rotateZ(-45deg) rotateX(-58deg); }
+            100% { opacity: 1; transform: translateZ(1px) rotateZ(-45deg) rotateX(-58deg); }
+        }
+        .wow-marker svg { display: block; width: 100%; height: 100%; }
+        .wow-lift { position: absolute; left: 0; top: 0; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.05); text-align: center; animation: wowRise 0.5s var(--wow-out) backwards; }
+        .wow-lift small { display: block; font-size: 10px; color: var(--text-secondary); }
+        .wow-lift b { display: block; font-size: 28px; line-height: 1.1; font-variant-numeric: tabular-nums; color: #fff; }
+        .wow-lift b.tick { animation: wowTick 0.2s var(--wow-out); }
+        @keyframes wowTick { from { opacity: 0.2; transform: translate3d(0, 10px, 0); } }
+
+        /* --- Выключатели --- */
+        body.optimized .wow-in, body.optimized .wow-pop, body.optimized .wow-slide { animation: none; }
+        body.optimized .wow-tower { display: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .wow-intro-screen, .wow-sky, .wow-tower, .wow-ripple { display: none !important; }
+            .wow-in, .wow-pop, .wow-slide { animation: none !important; }
+            body.wow-intro > * { animation-play-state: running !important; }
+        }
     </style>
 </head>
-<body>
+<body class="wow-intro">
+    <div class="wow-intro-screen" id="wowIntro" aria-hidden="true">
+        <div class="wow-logo" id="wowLogo">
+            <svg viewBox="0 0 1024 1024">
+                <defs><linearGradient id="wowPinGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9bcc6"/></linearGradient></defs>
+                <path class="wow-pin-fill" fill="url(#wowPinGrad)" d="M512 880 C430 775 272 620 272 445 A240 240 0 1 1 752 445 C752 620 594 775 512 880 Z"/>
+                <path class="wow-pin-line" pathLength="1" d="M512 880 C430 775 272 620 272 445 A240 240 0 1 1 752 445 C752 620 594 775 512 880 Z"/>
+                <circle class="wow-hole" cx="512" cy="445" r="158" fill="#0b0c12"/>
+                <g class="wow-temple" fill="#fff">
+                    <rect class="wide" x="404" y="541" width="216" height="16" rx="4" style="animation-delay:1.05s"/>
+                    <rect class="up" x="424" y="428" width="22" height="105" rx="4" style="animation-delay:1.13s"/>
+                    <rect class="up" x="473" y="428" width="22" height="105" rx="4" style="animation-delay:1.19s"/>
+                    <rect class="up" x="529" y="428" width="22" height="105" rx="4" style="animation-delay:1.25s"/>
+                    <rect class="up" x="578" y="428" width="22" height="105" rx="4" style="animation-delay:1.31s"/>
+                    <rect class="wide" x="410" y="405" width="204" height="14" rx="4" style="animation-delay:1.4s"/>
+                    <path class="up" d="M512 335 L622 395 L402 395 Z" style="animation-delay:1.47s"/>
+                </g>
+            </svg>
+            <div class="wow-ring" style="animation-delay:1.55s"></div>
+            <div class="wow-ring" style="animation-delay:1.75s"></div>
+        </div>
+        <div class="wow-word" id="wowWord"></div>
+    </div>
 
     <div class="ambient-background">
         <div class="stgau-watermark"></div>
@@ -2425,6 +2582,283 @@
         window.addEventListener('online', updateOnlineState);
         window.addEventListener('offline', updateOnlineState);
         updateOnlineState();
+    </script>
+    <script>
+        /* =====================================================================
+           Слой анимаций поверх обычного навигатора.
+           Основной код не меняется — слой только оборачивает его функции.
+           ===================================================================== */
+        (function () {
+            const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+            const intro = document.getElementById('wowIntro');
+            const body = document.body;
+            const isOff = () => reduced || body.classList.contains('optimized');
+
+            /* ---------- Заставка ---------- */
+
+            const INTRO_KEY = 'stgau-intro-day';
+
+            function go() {
+                body.classList.remove('wow-intro');
+                body.classList.add('wow-go');
+                setTimeout(() => body.classList.remove('wow-go'), 3000);
+            }
+
+            function runIntro() {
+                // Заставка раз в день: когда спешишь на пару, ждать её каждый раз незачем
+                const today = new Date().toDateString();
+                let seen = null;
+                try { seen = localStorage.getItem(INTRO_KEY); } catch (err) { /* хранилище недоступно */ }
+                if (reduced || isOff() || seen === today) { intro.remove(); go(); return; }
+                try { localStorage.setItem(INTRO_KEY, today); } catch (err) { /* хранилище недоступно */ }
+                const letters = 'Навигатор СтГАУ'.split(' ');
+                let n = 0;
+                document.getElementById('wowWord').innerHTML = letters.map(word =>
+                    `<span>${word.split('').map(ch => `<i style="animation-delay:${1.5 + (n++) * 0.035}s">${ch}</i>`).join('')}</span>`
+                ).join('');
+
+                let left = false;
+                const leave = () => {
+                    if (left) return;
+                    left = true;
+                    // Масштаб, при котором тёмный круг метки закрывает весь экран
+                    const holeRadius = 190 * 158 / 1024;
+                    const zoom = Math.ceil(Math.hypot(innerWidth, innerHeight) / holeRadius);
+                    document.getElementById('wowLogo').style.setProperty('--wow-zoom', zoom);
+                    intro.classList.add('leaving');
+                    setTimeout(go, 380);
+                    setTimeout(() => intro.remove(), 900);
+                };
+                intro.addEventListener('pointerdown', leave);
+                setTimeout(leave, 2650);
+            }
+
+            /* ---------- Живой фон: созвездие, по линиям которого бегут сигналы-«маршруты» ---------- */
+
+            function runSky() {
+                if (reduced) return;
+                const host = document.querySelector('.ambient-background');
+                if (!host) return;
+                const canvas = document.createElement('canvas');
+                canvas.className = 'wow-sky';
+                host.appendChild(canvas);
+                const ctx = canvas.getContext('2d');
+                const dpr = Math.min(window.devicePixelRatio || 1, isAndroid ? 1 : 1.5);
+                const count = isAndroid ? 22 : 34;
+                const LINK = 150;
+                let w = 0, h = 0, nodes = [], pulses = [];
+                let px = 0, py = 0, tx = 0, ty = 0;
+
+                function resize() {
+                    w = innerWidth; h = innerHeight;
+                    canvas.width = w * dpr; canvas.height = h * dpr;
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                }
+                resize();
+                addEventListener('resize', resize);
+
+                for (let i = 0; i < count; i++) {
+                    nodes.push({
+                        x: Math.random() * w, y: Math.random() * h,
+                        vx: (Math.random() - 0.5) * 0.14, vy: (Math.random() - 0.5) * 0.14,
+                        d: 0.3 + Math.random() * 0.7
+                    });
+                }
+
+                function neighbour(a) {
+                    const near = nodes.filter(n => n !== a && Math.hypot(n.x - a.x, n.y - a.y) < LINK);
+                    return near.length ? near[Math.floor(Math.random() * near.length)] : null;
+                }
+
+                addEventListener('pointermove', (e) => { tx = (e.clientX / w - 0.5) * 2; ty = (e.clientY / h - 0.5) * 2; }, { passive: true });
+                addEventListener('deviceorientation', (e) => {
+                    if (e.gamma == null) return;
+                    tx = Math.max(-1, Math.min(1, e.gamma / 25));
+                    ty = Math.max(-1, Math.min(1, (e.beta - 45) / 25));
+                }, { passive: true });
+
+                let last = 0;
+                function frame(now) {
+                    requestAnimationFrame(frame);
+                    if (document.hidden || isOff() || now - last < 33) return;   // 30 кадров в секунду хватает
+                    last = now;
+                    px += (tx - px) * 0.05; py += (ty - py) * 0.05;
+                    ctx.clearRect(0, 0, w, h);
+                    const pos = (n) => [n.x + px * 22 * n.d, n.y + py * 22 * n.d];
+
+                    nodes.forEach(n => {
+                        n.x += n.vx; n.y += n.vy;
+                        if (n.x < -20) n.x = w + 20; else if (n.x > w + 20) n.x = -20;
+                        if (n.y < -20) n.y = h + 20; else if (n.y > h + 20) n.y = -20;
+                    });
+
+                    ctx.lineWidth = 0.6;
+                    for (let i = 0; i < count; i++) {
+                        const [ax, ay] = pos(nodes[i]);
+                        for (let j = i + 1; j < count; j++) {
+                            const [bx, by] = pos(nodes[j]);
+                            const dist = Math.hypot(ax - bx, ay - by);
+                            if (dist > LINK) continue;
+                            ctx.strokeStyle = `rgba(255,255,255,${(1 - dist / LINK) * 0.16})`;
+                            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+                        }
+                        ctx.fillStyle = `rgba(255,255,255,${0.2 + nodes[i].d * 0.35})`;
+                        ctx.beginPath(); ctx.arc(ax, ay, 0.7 + nodes[i].d, 0, 6.3); ctx.fill();
+                    }
+
+                    if (pulses.length < 3 && Math.random() < 0.03) {
+                        const a = nodes[Math.floor(Math.random() * count)], b = neighbour(a);
+                        if (b) pulses.push({ a, b, t: 0 });
+                    }
+                    pulses = pulses.filter(p => {
+                        p.t += 0.022;
+                        if (p.t >= 1) {
+                            const next = neighbour(p.b);
+                            if (!next || Math.random() < 0.15) return false;
+                            p.a = p.b; p.b = next; p.t = 0;
+                        }
+                        const [ax, ay] = pos(p.a), [bx, by] = pos(p.b);
+                        const x = ax + (bx - ax) * p.t, y = ay + (by - ay) * p.t;
+                        ctx.fillStyle = 'rgba(255,255,255,0.14)';
+                        ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.3); ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 6.3); ctx.fill();
+                        return true;
+                    });
+                }
+                requestAnimationFrame(frame);
+            }
+
+            /* ---------- Волна и пятно света от касания ---------- */
+
+            document.addEventListener('pointerdown', (e) => {
+                if (isOff()) return;
+                const el = e.target.closest && e.target.closest('.glass-card, .room-chip, .quick-btn, .map-btn, .room-card, .plus-row, .plus-plan');
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+                el.style.setProperty('--my', `${e.clientY - r.top}px`);
+                const ripple = document.createElement('div');
+                ripple.className = 'wow-ripple';
+                ripple.style.left = `${e.clientX}px`;
+                ripple.style.top = `${e.clientY}px`;
+                ripple.addEventListener('animationend', () => ripple.remove());
+                body.appendChild(ripple);
+            }, { passive: true });
+
+            /* ---------- Каскад: элементы появляются друг за другом ---------- */
+
+            function cascade(el, cls, delay) {
+                el.classList.add(cls);
+                el.style.animationDelay = `${delay}ms`;
+            }
+
+            new MutationObserver(() => {
+                if (isOff()) return;
+                let t = 0;
+                contentArea.querySelectorAll('.unit-title, .unit-sub, .unit-address, .floor-title, .room-chip, .room-info > *, .plus-section').forEach(el => {
+                    if (el.classList.contains('room-chip')) { cascade(el, 'wow-pop', Math.min(t, 600)); t += 16; }
+                    else if (el.classList.contains('floor-title')) { cascade(el, 'wow-slide', Math.min(t, 600)); t += 40; }
+                    else { cascade(el, 'wow-in', Math.min(t, 600)); t += 60; }
+                });
+            }).observe(contentArea, { childList: true });
+
+            new MutationObserver(() => {
+                if (isOff()) return;
+                searchResultsList.querySelectorAll('.room-card').forEach((el, i) => {
+                    if (i < 8) cascade(el, 'wow-in', i * 35);
+                });
+            }).observe(searchResultsList, { childList: true });
+
+            // Окна расписания и Студент+: каскад только при открытии, а не при каждом обновлении данных
+            let sheetFresh = false;
+            const plainOpenSheet = openSheet;
+            openSheet = function (mode) {
+                sheetFresh = true;
+                plainOpenSheet(mode);
+            };
+            new MutationObserver(() => {
+                if (!sheetFresh || isOff()) return;
+                sheetFresh = false;
+                plusBody.querySelectorAll(':scope > *').forEach((el, i) => cascade(el, 'wow-in', 120 + i * 60));
+            }).observe(plusBody, { childList: true });
+
+            /* ---------- 3D-корпус: этажи вырастают, нужный выезжает, на него падает метка ---------- */
+
+            let towerTimers = [];
+            const later = (fn, ms) => towerTimers.push(setTimeout(fn, ms));
+
+            function towerHtml(room, total) {
+                let slabs = '';
+                for (let f = 1; f <= total; f++) {
+                    const cls = f === room.floor ? 'is-target' : f > room.floor ? 'is-above' : 'is-below';
+                    slabs += `<div class="wow-slab ${cls}" style="--n:${f - 1}">
+                        <i class="fr"></i><i class="rt"></i><i class="top"></i>
+                        ${f === room.floor ? `<i class="wow-landing"></i>
+                        <div class="wow-marker"><svg viewBox="0 0 34 46"><path d="M17 45 C13 38 2 28 2 16 A15 15 0 1 1 32 16 C32 28 21 38 17 45 Z" fill="#090a0f" stroke="#fff" stroke-width="2"/><circle cx="17" cy="16" r="5.5" fill="#fff"/></svg></div>` : ''}
+                    </div>`;
+                }
+                return `<div class="wow-tower" aria-hidden="true" style="--floors:${total}">
+                    <div class="wow-lift"><small>этаж</small><b>1</b></div>
+                    <div class="wow-scene"><div class="wow-stack">${slabs}</div></div>
+                </div>`;
+            }
+
+            function playTower(room, total) {
+                const tower = routeContent.querySelector('.wow-tower');
+                if (!tower) return;
+                const num = tower.querySelector('.wow-lift b');
+                const start = total * 75 + 300;
+
+                for (let f = 2; f <= room.floor; f++) {
+                    later(() => {
+                        num.textContent = f;
+                        num.classList.remove('tick');
+                        void num.offsetWidth;
+                        num.classList.add('tick');
+                        haptic('light');
+                    }, start + (f - 2) * 130);
+                }
+                const open = start + (room.floor - 1) * 130 + 80;
+                later(() => tower.querySelector('.wow-stack').classList.add('is-open'), open);
+                later(() => tower.querySelector('.wow-marker').classList.add('go'), open + 320);
+                later(() => {
+                    tower.querySelector('.wow-landing').classList.add('go');
+                    haptic('heavy');
+                }, open + 320 + 465);
+                return open + 700;
+            }
+
+            const plainShowDetails = showDetails;
+            showDetails = function (room) {
+                plainShowDetails(room);
+                towerTimers.forEach(clearTimeout);
+                towerTimers = [];
+                if (isOff()) return;
+
+                let wait = 150;
+                const unit = UNITS.find(u => u.code === room.unit);
+                const known = unit && unit.floorList ? unit.floorList : [];
+                if (room.floor && !room.unitPlace && known.length) {
+                    const total = Math.max(room.floor, ...known);
+                    routeContent.insertAdjacentHTML('afterbegin', towerHtml(room, total));
+                    wait = playTower(room, total);
+                }
+                // Шаги маршрута проявляются, когда метка уже приземлилась
+                routeContent.querySelectorAll('.route-address, .map-btn, .route-steps li, .near-food, .route-extra').forEach((el, i) => {
+                    if (!el.closest('.route-extra') || el.classList.contains('route-extra')) {
+                        cascade(el, 'wow-in', Math.min(wait, 900) * 0.5 + i * 70);
+                    }
+                });
+            };
+
+            /* ---------- Запуск ---------- */
+
+            document.documentElement.classList.add('wow');
+            unitGrid.querySelectorAll('.glass-card').forEach((card, i) => card.style.setProperty('--i', i));
+            runSky();
+            runIntro();
+        })();
     </script>
 </body>
 </html>
