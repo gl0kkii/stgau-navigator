@@ -3,14 +3,14 @@
    ---------------------------------------------------------------------
    После первого открытия сайт целиком сохраняется на телефоне и потом
    открывается без интернета: кабинеты, этажи, маршруты, столовые.
-   Страница: сначала пробуем сеть (чтобы обновления приходили сразу),
-   если сеть не ответила за 3.5 секунды — показываем сохранённую копию.
+   Страница: если копия уже есть, показываем её мгновенно и тихо обновляем на
+   следующий запуск. При самом первом открытии ждём сеть.
    Запросы к серверу Студент+ (workers.dev) не трогаем — их данные
    страница сама хранит у себя.
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v3';
+const CACHE = 'stgau-nav-v4';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -18,7 +18,7 @@ const NETWORK_TIMEOUT = 3500;
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE)
-            .then(cache => cache.addAll(['./', PAGE, APP]))
+            .then(cache => cache.addAll(['./', PAGE, APP, './watermark.png']))
             .then(() => self.skipWaiting())
     );
 });
@@ -46,6 +46,9 @@ function withTimeout(promise) {
 async function networkFirst(request, key) {
     const cache = await caches.open(CACHE);
     const network = fetch(request).then(res => { if (res.ok) cache.put(key, res.clone()); return res; });
+    // Копия уже есть — открываем мгновенно, свежая версия покажется при следующем запуске
+    const ready = (await cache.match(key)) || (key === PAGE && await cache.match('./'));
+    if (ready) { network.catch(() => {}); return ready; }
     try {
         return await withTimeout(network);
     } catch (err) {
