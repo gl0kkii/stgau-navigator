@@ -663,6 +663,72 @@ backdrop-filter: none;
 .android .bubble-1 { background: radial-gradient(closest-side, #ffffff 30%, rgba(255, 255, 255, 0) 100%); }
 .android .bubble-2 { background: radial-gradient(closest-side, #8e8e93 30%, rgba(142, 142, 147, 0) 100%); }
 .android .bubble-3 { background: radial-gradient(closest-side, #aeaeb2 30%, rgba(174, 174, 178, 0) 100%); }
+@media (max-width: 340px) {
+body { padding-left: 10px; padding-right: 10px; }
+.header { margin-bottom: 16px; }
+.header h1 { font-size: 27px; }
+.grid-container.units { grid-template-columns: repeat(2, 1fr); }
+.quick-btn { font-size: 13px; padding-left: 6px; padding-right: 6px; }
+.wow-stack { margin-left: -64px; }
+}
+@media (max-height: 480px) and (max-width: 900px) {
+body { padding-top: calc(10px + var(--sat)); padding-bottom: calc(52px + var(--sab)); }
+.header { margin-bottom: 10px; }
+.header h1 { font-size: 22px; }
+.header p { display: none; }
+html:not(.fold-h):not(.fold-v) .optimize-btn { position: static; display: block; margin: 8px auto 0; padding: 6px 10px; font-size: 11px; }
+}
+@media (min-width: 600px) and (max-width: 1024px) {
+.grid-container.units { grid-template-columns: repeat(4, 1fr); }
+}
+html.fold-h body, html.fold-v body {
+display: grid;
+height: 100vh;
+height: 100dvh;
+min-height: 0;
+overflow: hidden;
+padding: 0;
+}
+html.fold-h .grid-container.units, html.fold-v .grid-container.units {
+grid-template-columns: repeat(3, 1fr);
+grid-auto-rows: max-content;
+align-content: start;
+overflow-y: auto;
+min-height: 0;
+padding-bottom: 56px;
+}
+html.fold-h .content-layout, html.fold-v .content-layout {
+flex-direction: column;
+gap: 0;
+min-height: 0;
+overflow-y: auto;
+padding: 12px;
+}
+html.fold-h .content-display, html.fold-v .content-display,
+html.fold-h .content-layout.active-details .content-display, html.fold-v .content-layout.active-details .content-display { flex: 0 0 auto; }
+html.fold-h .info-route-panel, html.fold-v .info-route-panel { order: 2; width: 100%; max-height: 0; margin-top: 0; border-width: 0; }
+html.fold-h .content-layout.active-details .info-route-panel, html.fold-v .content-layout.active-details .info-route-panel { width: 100%; max-height: 1000px; margin-top: 12px; border-width: 1px; flex-shrink: 0; }
+html.fold-h body {
+grid-template-columns: var(--seg-a) var(--hinge) var(--seg-b);
+grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+}
+html.fold-h .header, html.fold-h .search-wrapper, html.fold-h .quick-bar, html.fold-h .plus-card, html.fold-h .grid-container.units, html.fold-h .page-foot { grid-column: 1; margin-left: 12px; margin-right: 12px; }
+html.fold-h .header { padding-top: calc(12px + var(--sat)); margin-bottom: 12px; }
+html.fold-h .header h1 { font-size: 26px; }
+html.fold-h .page-foot { margin-top: 0; margin-bottom: 8px; text-align: right; }
+html.fold-h .grid-container.units { margin-bottom: 8px; }
+html.fold-h .content-layout { grid-column: 3; grid-row: 1 / -1; padding-top: calc(12px + var(--sat)); padding-bottom: calc(12px + var(--sab)); }
+html.fold-h .plus-sheet-inner { left: calc(var(--seg-a) + var(--hinge)); }
+html.fold-v body {
+grid-template-columns: minmax(0, 1fr);
+grid-template-rows: var(--seg-a) var(--hinge) auto auto minmax(0, 1fr);
+}
+html.fold-v .header, html.fold-v .plus-card, html.fold-v .page-foot { display: none; }
+html.fold-v .content-layout { grid-row: 1; padding-top: calc(12px + var(--sat)); }
+html.fold-v .search-wrapper { grid-row: 3; margin: 10px 12px 8px; }
+html.fold-v .quick-bar { grid-row: 4; margin: 0 12px 8px; }
+html.fold-v .grid-container.units { grid-row: 5; margin: 0 12px; }
+html.fold-v .plus-sheet-inner { top: calc(var(--seg-a) + var(--hinge)); max-height: none; }
 :root { --wow-spring: cubic-bezier(0.34, 1.56, 0.64, 1); --wow-out: cubic-bezier(0.16, 1, 0.3, 1); }
 .wow-intro-screen {
 position: fixed; inset: 0; z-index: 3000;
@@ -2193,6 +2259,34 @@ if (!offline && authed && plusOffline) loadPlus();   // связь вернул�
 window.addEventListener('online', updateOnlineState);
 window.addEventListener('offline', updateOnlineState);
 updateOnlineState();
+function viewportSegments() {
+if (window.viewport && window.viewport.segments) return window.viewport.segments;
+if (window.visualViewport && window.visualViewport.segments) return window.visualViewport.segments;
+return null;
+}
+function applyFold() {
+const root = document.documentElement;
+const seg = viewportSegments();
+const two = seg && seg.length === 2 ? seg : null;
+const side = two && two[1].x > two[0].x + 1;
+const stacked = two && two[1].y > two[0].y + 1;
+root.classList.toggle('fold-h', !!side);
+root.classList.toggle('fold-v', !!stacked && !side);
+if (side) {
+root.style.setProperty('--seg-a', `${two[0].width}px`);
+root.style.setProperty('--hinge', `${Math.max(0, two[1].x - two[0].x - two[0].width)}px`);
+root.style.setProperty('--seg-b', `${two[1].width}px`);
+} else if (stacked) {
+root.style.setProperty('--seg-a', `${two[0].height}px`);
+root.style.setProperty('--hinge', `${Math.max(0, two[1].y - two[0].y - two[0].height)}px`);
+}
+}
+applyFold();
+window.addEventListener('resize', applyFold);
+['(horizontal-viewport-segments: 2)', '(vertical-viewport-segments: 2)'].forEach(q => {
+const mq = window.matchMedia ? window.matchMedia(q) : null;
+if (mq && mq.addEventListener) mq.addEventListener('change', applyFold);
+});
 (function () {
 const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const intro = document.getElementById('wowIntro');
