@@ -2582,8 +2582,7 @@
         window.addEventListener('online', updateOnlineState);
         window.addEventListener('offline', updateOnlineState);
         updateOnlineState();
-    </script>
-    <script>
+
         /* =====================================================================
            Слой анимаций поверх обычного навигатора.
            Основной код не меняется — слой только оборачивает его функции.
@@ -2609,7 +2608,7 @@
                 const today = new Date().toDateString();
                 let seen = null;
                 try { seen = localStorage.getItem(INTRO_KEY); } catch (err) { /* хранилище недоступно */ }
-                if (reduced || isOff() || seen === today) { intro.remove(); go(); return; }
+                if (reduced || isOff() || seen === today || location.hash.includes('room=')) { intro.remove(); go(); return; }
                 try { localStorage.setItem(INTRO_KEY, today); } catch (err) { /* хранилище недоступно */ }
                 const letters = 'Навигатор СтГАУ'.split(' ');
                 let n = 0;
