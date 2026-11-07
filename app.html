@@ -909,7 +909,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 07.11.2026 23:44</span></p>
+    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 07.11.2026 23:52</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -1612,13 +1612,30 @@ swapContent(`
 <div class="room-chip" data-unit="${escapeHtml(room.unit)}" style="display: inline-block; font-size: 12px;">${room.unitPlace ? '← Все столовые' : `← Все кабинеты ${escapeHtml(room.unit)}`}</div>
 </div>
 `, 250);
-const toRoute = () => {
+setTimeout(glideToRoute, 250);
+}
+let glideId = 0;
+function glideToRoute() {
 const panel = document.getElementById('infoRoutePanel');
-const top = panel.getBoundingClientRect().top;
-if (top < -2 || top > Math.min(40, window.innerHeight * 0.3)) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
-setTimeout(toRoute, 300);
-setTimeout(toRoute, 900);
+const fold = document.documentElement.classList.contains('fold-h') || document.documentElement.classList.contains('fold-v');
+const box = fold ? contentLayout : null;   // на раскладушке листается своя половина экрана
+const getY = () => (box ? box.scrollTop : window.scrollY);
+const setY = (y) => (box ? (box.scrollTop = y) : window.scrollTo(0, y));
+const targetY = () => getY() + panel.getBoundingClientRect().top - (box ? box.getBoundingClientRect().top : 0) - 12;
+const startY = getY();
+if (Math.abs(targetY() - startY) < 40) return;
+const id = ++glideId;
+const duration = 1100;
+const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const stop = () => { glideId++; };
+['touchstart', 'wheel'].forEach(ev => window.addEventListener(ev, stop, { once: true, passive: true }));
+const t0 = performance.now();
+(function step(now) {
+if (id !== glideId) return;   // студент сам начал листать — не мешаем
+const k = Math.min(1, (now - t0) / duration);
+setY(startY + (targetY() - startY) * ease(k));
+if (k < 1) requestAnimationFrame(step);
+})(t0);
 }
 const RECENT_KEY = 'stgau-recent';
 const recentKey = (room) => `${room.unit} ${room.number}`;
