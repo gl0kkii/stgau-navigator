@@ -587,7 +587,7 @@ position: absolute; left: 0; right: 0; bottom: 0;
 max-height: calc(var(--tg-viewport-stable-height, 100vh) - 40px);
 overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
 padding: 18px 16px calc(24px + var(--sab));
-background: rgba(14, 16, 22, 0.97);
+background: rgb(14, 16, 22);   
 border-top: 1px solid var(--glass-border);
 border-radius: 26px 26px 0 0;
 box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
@@ -795,7 +795,7 @@ html.wow body:not(.optimized) .search-wrapper.fullscreen .search-box { animation
 @media (max-width: 560px) {
 html.wow .content-layout.active-details .info-route-panel { max-height: 1000px; }
 }
-.wow-tower { position: relative; height: max(150px, calc(72px + var(--floors) * 20px)); margin: -4px 0 8px; overflow: hidden; }
+.wow-tower { position: relative; height: max(170px, calc(122px + var(--floors) * 20px)); margin: -4px 0 8px; overflow: hidden; }
 .wow-scene { position: absolute; inset: 0; perspective: 900px; perspective-origin: 50% 30%; }
 .wow-stack { position: absolute; left: 50%; bottom: 18px; width: 92px; height: 92px; margin-left: -46px; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(45deg); }
 .wow-slab { position: absolute; inset: 0; transform-style: preserve-3d; transform: translate3d(0, 0, calc(var(--n) * 22px)); transition: transform 0.7s var(--wow-spring), opacity 0.45s ease; animation: wowSlabIn 0.6s var(--wow-spring) backwards; animation-delay: calc(var(--n) * 75ms); }
@@ -1611,8 +1611,9 @@ swapContent(`
 </div>
 `, 250);
 setTimeout(() => {
-const top = contentLayout.getBoundingClientRect().top;
-if (top < 0) contentLayout.scrollIntoView({ behavior: 'smooth', block: 'start' });
+const panel = document.getElementById('infoRoutePanel');
+const top = panel.getBoundingClientRect().top;
+if (top < 0 || top > window.innerHeight * 0.3) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }, 300);
 }
 const RECENT_KEY = 'stgau-recent';
