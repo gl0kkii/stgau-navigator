@@ -576,6 +576,7 @@ body.sheet-open .optimize-btn { opacity: 0; pointer-events: none; }
 .page-foot { margin: 18px 0 72px; text-align: center; font-size: 12px; }
 .page-foot a { color: var(--text-secondary); text-decoration: none; }
 .page-foot .build-id { color: var(--text-tertiary); }
+.page-foot .foot-channel { display: inline-block; margin-bottom: 10px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 13px; }
 .plus-sheet {
 position: fixed; inset: 0; z-index: 1100;
 background: rgba(0, 0, 0, 0.45);
@@ -909,7 +910,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 07.11.2026 23:52</span></p>
+    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:37</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -1087,6 +1088,9 @@ google: (address, c) => `https://www.google.com/maps/dir/?api=1&destination=${c 
 apple:  (address, c) => c ? `https://maps.apple.com/?daddr=${c[0]},${c[1]}&dirflg=w` : `https://maps.apple.com/?q=${mapQuery(address)}`
 };
 function openUrl(url) {
+if (tg && url.startsWith('https://t.me/') && typeof tg.openTelegramLink === 'function') {
+try { tg.openTelegramLink(url); return; } catch (err) { /* ниже обычный способ */ }
+}
 if (tg && typeof tg.openLink === 'function') {
 try { tg.openLink(url); return; } catch (err) { /* старый клиент — ниже обычный способ */ }
 }
