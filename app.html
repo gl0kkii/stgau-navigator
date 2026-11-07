@@ -935,7 +935,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:55</span></p>
+    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 01:05</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -2275,14 +2275,14 @@ const rows = Object.entries(freeData.rooms).map(([num, ls]) => ({ num, st: roomS
 const free = rows.filter(r => !r.st.busy).sort((a, b) => ((a.room && a.room.floor) || 99) - ((b.room && b.room.floor) || 99) || numCmp(a.num, b.num));
 const soon = rows.filter(r => r.st.busy && r.st.until <= addMinutes(hm, 20)).sort((a, b) => a.st.until.localeCompare(b.st.until));
 const chip = (r, label) => `<button class="free-room${r.room ? '' : ' is-unknown'}" ${r.room ? `data-act="room" data-room-text="${escapeHtml(freeUnit + ' ' + r.num)}"` : 'disabled'}><b>${escapeHtml(r.num)}</b><small>${escapeHtml(label)}${r.room && r.room.floor ? ` · ${r.room.floor} эт.` : ''}</small></button>`;
-if (!rows.length) html += `<p class="plus-note">Для ${escapeHtml(freeUnit)} в ЭИОС нет списка аудиторий.</p>`;
+if (!rows.length) html += `<p class="plus-note">${freeData.total ? `Расписание аудиторий ${escapeHtml(freeUnit)} ещё собирается — загляни чуть позже.` : `Для ${escapeHtml(freeUnit)} в ЭИОС нет списка аудиторий.`}</p>`;
 else {
 const offHours = new Date(mskDay() + 'T12:00:00Z').getUTCDay() === 0 || hm >= '20:30' || hm < '07:30';
 html += section(`🟢 Свободно сейчас · ${free.length} из ${rows.length}`, free.length
 ? `<div class="free-grid">${free.map(r => chip(r, r.st.until ? `до ${r.st.until}` : 'до конца дня')).join('')}</div>`
 : `<p class="plus-note">Сейчас по расписанию всё занято.</p>`);
 if (soon.length) html += section('⏳ Скоро освободятся', `<div class="free-grid">${soon.map(r => chip(r, `в ${r.st.until}`)).join('')}</div>`);
-html += `<p class="plus-note">${offHours ? 'Сейчас пар нет — по расписанию свободно всё. ' : ''}По расписанию ЭИОС на сегодня: консультации и занятия вне расписания сюда не попадают. Нажми на аудиторию — откроется маршрут.</p>`;
+html += `<p class="plus-note">${freeData.total && freeData.known < freeData.total ? `Собрано ${freeData.known} из ${freeData.total} аудиторий — остальные появятся в течение часа. ` : ''}${offHours ? 'Сейчас пар нет — по расписанию свободно всё. ' : ''}По расписанию ЭИОС на сегодня: консультации и занятия вне расписания сюда не попадают. Нажми на аудиторию — откроется маршрут.</p>`;
 }
 }
 plusBody.innerHTML = html;
