@@ -507,7 +507,7 @@ opacity: 0;
 animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
 }
 .plus-card[hidden] { display: none; }
-.quick-bar { display: flex; gap: 8px; margin-bottom: 10px; opacity: 0; animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards; }
+.quick-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; opacity: 0; animation: openElement 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards; }
 .quick-btn {
 flex: 1 1 0; height: 40px; border-radius: 14px; cursor: pointer;
 border: 1px solid var(--glass-border); background: var(--glass-base); color: #fff;
@@ -526,6 +526,29 @@ transition: transform 0.35s var(--ios-spring), background 0.2s ease;
 .lesson-main small + small { margin-top: 1px; }
 .lesson-kind { font-style: normal; padding: 0 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 11px; }
 .lesson-kind.is-change { background: rgba(255, 214, 10, 0.2); color: var(--ios-yellow); }
+@media (max-width: 560px) { .quick-bar { grid-template-columns: repeat(2, 1fr); } }
+.quick-btn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.transfer { margin: 2px 0 6px; padding: 7px 12px; border-radius: 10px; background: rgba(118, 118, 128, 0.14); color: var(--ios-label-2); font-size: 12px; }
+.transfer.warn { background: rgba(255, 159, 10, 0.16); color: #ffb340; }
+.plus-sub .transfer-line { display: block; margin-top: 3px; color: #ffb340; }
+.room-status { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(118, 118, 128, 0.14); color: #fff; font-size: 13px; font-weight: 600; }
+.room-status small { display: block; margin-top: 2px; font-weight: 400; font-size: 12px; color: var(--ios-label-2); }
+.room-status.free { background: rgba(48, 209, 88, 0.14); }
+.room-status.busy { background: rgba(255, 69, 58, 0.14); }
+.room-status.loading { color: var(--ios-label-2); font-weight: 400; }
+.free-units { margin-bottom: 14px; }
+.room-chip.on { background: #fff; color: var(--bg-main); }
+.free-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.free-room { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(48, 209, 88, 0.1); color: #fff; font: inherit; text-align: left; cursor: pointer; }
+.free-room b { font-size: 15px; }
+.free-room small { font-size: 11px; color: var(--ios-label-2); }
+.free-room.is-unknown { opacity: 0.55; cursor: default; }
+.free-room:active { transform: scale(0.96); }
+.prep-results { margin-top: 10px; }
+.prep-name { margin: 14px 0 8px; font-size: 18px; }
+.report-kinds { display: flex; flex-wrap: wrap; gap: 8px; }
+.report-text { width: 100%; resize: vertical; min-height: 72px; font: inherit; }
+.report-link { display: block; margin: 10px auto 0; padding: 4px 8px; border: none; background: none; color: var(--ios-label-3); font: inherit; font-size: 12px; cursor: pointer; }
 .route-btn { width: 100%; margin-top: 10px; background: #fff; color: var(--bg-main); border-color: transparent; }
 .route-btn:active { background: rgba(255, 255, 255, 0.8); }
 .map-actions .map-btn { flex: 1 1 0; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
@@ -892,6 +915,8 @@ body.wow-intro > * { animation-play-state: running !important; }
     <div class="quick-bar" id="quickBar">
         <button class="quick-btn" data-act="rasp">📅 Расписание</button>
         <button class="quick-btn" data-act="open">⭐ Студент+</button>
+        <button class="quick-btn" data-act="prep">👨‍🏫 Преподаватель</button>
+        <button class="quick-btn" data-act="free">🟢 Свободные</button>
     </div>
 
     <div class="plus-card" id="plusCard" hidden></div>
@@ -910,7 +935,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:37</span></p>
+    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:52</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -1590,6 +1615,7 @@ contentLayout.classList.add('active-details');
 updateBackButton();
 const food = !room.unitPlace && room.building ? nearestFood(room.building.address) : null;
 routeContent.innerHTML = `
+${room.numbered && !room.unitPlace ? '<div class="room-status loading" id="roomStatus">Проверяем, свободна ли аудитория…</div>' : ''}
 ${room.unitPlace ? `<div class="route-status">${statusHtml(foodStatus())}</div>` : ''}
 <div class="route-address">${addressHtml(room.building)}</div>
 ${mapButtonsHtml(room.building)}
@@ -1606,8 +1632,10 @@ ${food ? `
 <button class="map-btn" data-share="${room.id}">📤 Поделиться</button>
 ${favButtonHtml(room)}
 </div>
+${room.unitPlace ? '' : `<button class="report-link" data-report="${room.id}">⚠️ Нашёл ошибку в этом кабинете</button>`}
 `;
 rememberRecent(room);
+if (room.numbered && !room.unitPlace) loadRoomStatus(room);
 swapContent(`
 <div class="room-info" style="text-align: left;">
 <h4 style="font-size: 18px; margin-bottom: 6px;">${escapeHtml(room.title)}</h4>
@@ -1986,11 +2014,12 @@ html = `
 const next = findNextLesson();
 if (next) {
 const room = findRoomByText(next.room);
+const move = lessonTs(next) > Date.now() ? transferBefore(next) : null;
 html = `
 <div class="plus-row" data-act="${room ? 'room' : 'rasp'}" data-room-text="${escapeHtml(next.room)}">
 <div><div class="plus-kicker">${escapeHtml(whenLabel(next))} · ${escapeHtml(plusState.group.id)}</div>
 <div class="plus-title">${escapeHtml(next.subj || 'Пара')}</div>
-<div class="plus-sub">📍 ${escapeHtml(room ? next.room : (next.aud || 'аудитория не указана'))}${room ? ` · ${escapeHtml(room.location)}` : ''}${next.kind ? ` · ${escapeHtml(next.kind.toLowerCase())}` : ''}</div></div>
+<div class="plus-sub">📍 ${escapeHtml(room ? next.room : (next.aud || 'аудитория не указана'))}${room ? ` · ${escapeHtml(room.location)}` : ''}${next.kind ? ` · ${escapeHtml(next.kind.toLowerCase())}` : ''}${move && !move.ok ? `<span class="transfer-line">${escapeHtml(transferText(move))}</span>` : ''}</div></div>
 <span class="plus-chevron">›</span>
 </div>`;
 } else {
@@ -2007,10 +2036,10 @@ if (plusOffline) html += `<div class="plus-offline">Нет связи — пок
 plusCard.innerHTML = html;
 }
 function openSheet(mode) {
-if (!authed) { startLogin(); return; }
+if (!authed && !['prep', 'free', 'report'].includes(mode)) { startLogin(); return; }
 if (isSearchOpen) closeFullscreenSearch(null, true);
 sheetMode = mode;
-document.getElementById('sheetTitle').textContent = mode === 'rasp' ? 'Расписание' : 'Студент+';
+document.getElementById('sheetTitle').textContent = { rasp: 'Расписание', prep: 'Где преподаватель', free: 'Свободные аудитории', report: 'Нашёл ошибку' }[mode] || 'Студент+';
 isPlusOpen = true;
 plusSheet.classList.add('open');
 plusSheet.setAttribute('aria-hidden', 'false');
@@ -2032,7 +2061,7 @@ document.body.classList.remove('sheet-open');
 if (!silent) playSound('search-close');
 updateBackButton();
 }
-const renderSheet = () => (sheetMode === 'rasp' ? renderRaspSheet() : renderPlusSheet());
+const renderSheet = () => ({ rasp: renderRaspSheet, prep: renderPrepSheet, free: renderFreeSheet, report: renderReportSheet }[sheetMode] || renderPlusSheet)();
 const section = (title, inner) => `<section class="plus-section"><h3>${title}</h3>${inner}</section>`;
 function groupPickerHtml() {
 const g = plusState.group;
@@ -2083,7 +2112,7 @@ html += days.map(day => {
 const d = new Date(day + 'T12:00:00Z');
 const title = `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 return section(`${escapeHtml(title)}${day === today ? ' <span class="today-badge">сегодня</span>' : ''}`,
-week.lessons.filter(l => l.date === day).map(lessonHtml).join(''));
+lessonsWithTransfers(week.lessons.filter(l => l.date === day)));
 }).join('');
 }
 if (week && week.updated) {
@@ -2119,7 +2148,14 @@ html += section('Напоминания', `
 <label class="plus-switch">
 <span>Писать в боте за 15 минут до пары</span>
 <input type="checkbox" data-act="remind" ${s.user.remind ? 'checked' : ''}><i></i>
+</label>
+<label class="plus-switch" style="margin-top: 8px;">
+<span>Вечером в 20:00 — пары на завтра</span>
+<input type="checkbox" data-act="evening" ${s.user.evening !== false ? 'checked' : ''}><i></i>
 </label>`);
+if (s.group) html += section('Календарь', `
+<button class="map-btn plus-wide" data-act="calendar">📆 Пары в календарь телефона</button>
+<div id="calBox"></div>`);
 }
 if (st.source !== 'forever') {
 const planBtn = (key, sub) => `
@@ -2161,11 +2197,292 @@ btn.textContent = i > -1 ? '☆ В избранное' : '★ В избранн�
 haptic('light');
 try { await plusApi('/api/favs', { favs }); } catch (err) { showPlusToast(err.message); }
 }
+const mskNow = () => new Date(Date.now() + 180 * 60000);
+const mskHm = () => mskNow().toISOString().slice(11, 16);
+const mskDay = () => mskNow().toISOString().slice(0, 10);
+async function publicApi(path) {
+const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+try {
+const res = await fetch(PLUS_API + path, { signal: ctrl ? ctrl.signal : undefined });
+const data = await res.json().catch(() => ({}));
+if (!res.ok) throw new Error(data.error || 'Сервер недоступен');
+return data;
+} catch (err) {
+throw new Error(err.name === 'AbortError' || err instanceof TypeError ? 'Нет связи с сервером — проверь интернет' : err.message);
+} finally { clearTimeout(timer); }
+}
+function transferInfo(prev, next) {
+if (!prev || !next || prev.date !== next.date) return null;
+const a = findRoomByText(prev.room), b = findRoomByText(next.room);
+if (!a || !b || !a.building || !b.building) return null;
+const w = walkBetween(COORDS[a.building.address], COORDS[b.building.address]);
+if (!w || w.meters < 60) return null;
+const brk = Math.round((lessonTs(next) - lessonTs(prev, 'end')) / 60000);
+if (brk < 0 || brk > 45) return null;
+return { from: a.unit, to: b.unit, walk: w.minutes, brk, ok: w.minutes <= brk - 2 };
+}
+const transferText = (t) => t.walk > 30
+? `🚌 ${t.from} → ${t.to}: другой конец города, пешком ≈ ${t.walk} мин — нужен транспорт, перемена ${t.brk} мин`
+: `🚶 ${t.from} → ${t.to}: ≈ ${t.walk} мин пешком, перемена ${t.brk} мин${t.ok ? ' — успеваешь' : ' — выходи сразу!'}`;
+const transferHtml = (t) => `<div class="transfer${t.ok ? '' : ' warn'}">${escapeHtml(transferText(t))}</div>`;
+function lessonsWithTransfers(list) {
+return list.map((l, i) => {
+const t = i > 0 ? transferInfo(list[i - 1], l) : null;
+return (t ? transferHtml(t) : '') + lessonHtml(l);
+}).join('');
+}
+function transferBefore(next) {
+const all = [0, 1].flatMap(o => (raspWeeks[o] && raspWeeks[o].lessons) || []);
+const prev = all.filter(l => l.date === next.date && l.end <= next.start).pop();
+return prev ? transferInfo(prev, next) : null;
+}
+const FREE_UNITS = UNITS.filter(u => !u.place).map(u => u.code);
+const busyCache = {};     // корпус → { at, data }
+let freeUnit = null;
+let freeData = null, freeError = null, freeLoading = false;
+async function loadBusy(unit, force) {
+const hit = busyCache[unit];
+if (hit && !force && Date.now() - hit.at < 5 * 60000) return hit.data;
+const data = await publicApi('/api/busy?unit=' + encodeURIComponent(unit));
+busyCache[unit] = { at: Date.now(), data };
+return data;
+}
+function roomState(lessons, hm) {
+const cur = lessons.find(l => l.start <= hm && l.end > hm);
+if (cur) return { busy: true, until: cur.end, lesson: cur };
+const next = lessons.find(l => l.start > hm);
+return { busy: false, until: next ? next.start : null, lesson: next || null };
+}
+const numCmp = (a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || String(a).localeCompare(String(b));
+async function openFree(unit) {
+freeUnit = unit || freeUnit || (FREE_UNITS.includes(currentUnit) ? currentUnit : null) || readLocal('stgau-free-unit') || 'НК';
+if (!isPlusOpen || sheetMode !== 'free') openSheet('free'); else renderSheet();
+freeData = null; freeError = null; freeLoading = true;
+renderSheet();
+try { freeData = await loadBusy(freeUnit); } catch (err) { freeError = err.message; }
+freeLoading = false;
+writeLocal('stgau-free-unit', freeUnit);
+if (isPlusOpen && sheetMode === 'free') renderSheet();
+}
+function renderFreeSheet() {
+let html = `<div class="chip-row free-units">${FREE_UNITS.map(u => `<button class="room-chip${u === freeUnit ? ' on' : ''}" data-act="free" data-unit="${escapeHtml(u)}">${escapeHtml(u)}</button>`).join('')}</div>`;
+if (freeLoading) html += `<p class="plus-note">Смотрим расписание аудиторий ${escapeHtml(freeUnit)}…</p>`;
+else if (freeError) html += `<p class="plus-note">⚠️ ${escapeHtml(freeError)}</p>`;
+else if (freeData) {
+const hm = mskHm();
+const rows = Object.entries(freeData.rooms).map(([num, ls]) => ({ num, st: roomState(ls, hm), room: findRoomByText(`${freeUnit} ${num}`) }));
+const free = rows.filter(r => !r.st.busy).sort((a, b) => ((a.room && a.room.floor) || 99) - ((b.room && b.room.floor) || 99) || numCmp(a.num, b.num));
+const soon = rows.filter(r => r.st.busy && r.st.until <= addMinutes(hm, 20)).sort((a, b) => a.st.until.localeCompare(b.st.until));
+const chip = (r, label) => `<button class="free-room${r.room ? '' : ' is-unknown'}" ${r.room ? `data-act="room" data-room-text="${escapeHtml(freeUnit + ' ' + r.num)}"` : 'disabled'}><b>${escapeHtml(r.num)}</b><small>${escapeHtml(label)}${r.room && r.room.floor ? ` · ${r.room.floor} эт.` : ''}</small></button>`;
+if (!rows.length) html += `<p class="plus-note">Для ${escapeHtml(freeUnit)} в ЭИОС нет списка аудиторий.</p>`;
+else {
+const offHours = new Date(mskDay() + 'T12:00:00Z').getUTCDay() === 0 || hm >= '20:30' || hm < '07:30';
+html += section(`🟢 Свободно сейчас · ${free.length} из ${rows.length}`, free.length
+? `<div class="free-grid">${free.map(r => chip(r, r.st.until ? `до ${r.st.until}` : 'до конца дня')).join('')}</div>`
+: `<p class="plus-note">Сейчас по расписанию всё занято.</p>`);
+if (soon.length) html += section('⏳ Скоро освободятся', `<div class="free-grid">${soon.map(r => chip(r, `в ${r.st.until}`)).join('')}</div>`);
+html += `<p class="plus-note">${offHours ? 'Сейчас пар нет — по расписанию свободно всё. ' : ''}По расписанию ЭИОС на сегодня: консультации и занятия вне расписания сюда не попадают. Нажми на аудиторию — откроется маршрут.</p>`;
+}
+}
+plusBody.innerHTML = html;
+}
+function addMinutes(hm, min) {
+const [h, m] = hm.split(':').map(Number);
+const t = h * 60 + m + min;
+return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+}
+async function loadRoomStatus(room) {
+const box = document.getElementById('roomStatus');
+if (!box) return;
+try {
+const data = await loadBusy(room.unit);
+if (!isDetailsOpen || box !== document.getElementById('roomStatus')) return;
+const lessons = data.rooms[room.number];
+if (!lessons) { box.remove(); return; }
+const st = roomState(lessons, mskHm());
+box.className = 'room-status ' + (st.busy ? 'busy' : 'free');
+box.innerHTML = st.busy
+? `🔴 Сейчас пара до ${escapeHtml(st.until)}<small>${escapeHtml(st.lesson.subj || '')}${st.lesson.groups && st.lesson.groups.length ? ' · ' + escapeHtml(st.lesson.groups.join(', ')) : ''}</small>`
+: `🟢 Свободна ${st.until ? 'до ' + escapeHtml(st.until) : 'до конца дня'}<small>по расписанию ЭИОС на сегодня</small>`;
+} catch (err) { box.remove(); }
+}
+let prepQuery = '', prepResults = [], prepData = null, prepError = null, prepLoading = false, prepTimer = null;
+const readLocal = (k) => { try { return localStorage.getItem(k); } catch (err) { return null; } };
+const writeLocal = (k, v) => { try { localStorage.setItem(k, v); } catch (err) { /* хранилище недоступно */ } };
+const readRecentPreps = () => { try { return JSON.parse(readLocal('stgau-recent-prep') || '[]'); } catch (err) { return []; } };
+function openPrep(id) {
+if (!isPlusOpen || sheetMode !== 'prep') openSheet('prep');
+if (id) loadTeacher(id);
+else { prepData = null; renderSheet(); setTimeout(() => { const i = document.getElementById('prepInput'); if (i) i.focus(); }, 350); }
+}
+async function searchTeachers(q) {
+prepQuery = q;
+clearTimeout(prepTimer);
+if (q.trim().length < 2) { prepResults = []; renderPrepResults(); return; }
+prepTimer = setTimeout(async () => {
+try {
+const lq = q.trim().toLowerCase();
+prepResults = ((await publicApi('/api/teachers?q=' + encodeURIComponent(q.trim()))).teachers || [])
+.sort((a, b) => (b.name.toLowerCase().startsWith(lq) ? 1 : 0) - (a.name.toLowerCase().startsWith(lq) ? 1 : 0));
+}
+catch (err) { prepResults = []; prepError = err.message; }
+if (q === prepQuery) renderPrepResults();
+}, 250);
+}
+function renderPrepResults() {
+const box = document.getElementById('prepResults');
+if (!box) return;
+if (prepQuery.trim().length < 2) {
+const recent = readRecentPreps();
+box.innerHTML = recent.length ? `<p class="plus-note">Недавние</p>${recent.map(t => `<button class="plus-plan" data-act="prep" data-id="${t.id}"><span><b>${escapeHtml(t.name)}</b></span><em>›</em></button>`).join('')}` : '';
+return;
+}
+box.innerHTML = prepResults.length
+? prepResults.map(t => `<button class="plus-plan" data-act="prep" data-id="${t.id}"><span><b>${escapeHtml(t.name)}</b></span><em>›</em></button>`).join('')
+: `<p class="plus-note">${prepError ? '⚠️ ' + escapeHtml(prepError) : 'Никого не нашли — попробуй только фамилию.'}</p>`;
+}
+async function loadTeacher(id) {
+prepLoading = true; prepError = null; prepData = null;
+renderSheet();
+try {
+prepData = await publicApi('/api/teacher?id=' + encodeURIComponent(id));
+const recent = readRecentPreps().filter(t => String(t.id) !== String(prepData.id));
+recent.unshift({ id: prepData.id, name: prepData.name });
+writeLocal('stgau-recent-prep', JSON.stringify(recent.slice(0, 5)));
+} catch (err) { prepError = err.message; }
+prepLoading = false;
+if (isPlusOpen && sheetMode === 'prep') renderSheet();
+}
+function teacherLessonHtml(l) {
+const room = findRoomByText(l.room);
+const now = Date.now();
+const live = lessonTs(l) <= now && lessonTs(l, 'end') > now;
+const groups = (l.groups || []).join(', ');
+return `
+<div class="lesson-row${live ? ' is-live' : ''}${room ? ' is-link' : ''}" ${room ? `data-act="room" data-room-text="${escapeHtml(l.room)}"` : ''}>
+<span class="lesson-day"><b>${escapeHtml(l.start)}</b>${escapeHtml(l.end)}</span>
+<span class="lesson-main">
+${escapeHtml(l.subj || 'Пара')}
+<small>${l.kind ? `<i class="lesson-kind">${escapeHtml(l.kind)}</i> ` : ''}${escapeHtml(groups)}</small>
+<small>📍 ${escapeHtml(room ? l.room : (l.aud || '—'))}${room ? ` · ${escapeHtml(room.location)} ›` : ''}</small>
+</span>
+</div>`;
+}
+function renderPrepSheet() {
+let html = '';
+if (prepData || prepLoading || (prepError && !prepQuery)) {
+html += `<button class="map-btn plus-wide" data-act="prep-back">← Другой преподаватель</button>`;
+if (prepLoading) html += `<p class="plus-note">Загружаем расписание…</p>`;
+else if (prepError) html += `<p class="plus-note">⚠️ ${escapeHtml(prepError)}</p>`;
+else {
+const today = mskDay(), hm = mskHm();
+const todays = prepData.lessons.filter(l => l.date === today);
+const st = roomState(todays, hm);
+const later = prepData.lessons.find(l => l.date > today);
+const where = (l) => { const r = findRoomByText(l.room); return r ? l.room : (l.aud || 'аудитория не указана'); };
+let status;
+if (st.busy) status = `<div class="room-status busy">🔴 Сейчас на паре до ${escapeHtml(st.until)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
+else if (st.lesson) status = `<div class="room-status free">🟢 Сейчас свободен · следующая пара в ${escapeHtml(st.lesson.start)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
+else status = `<div class="room-status">Сегодня пар больше нет${later ? `<small>Ближайшая: ${escapeHtml(whenLabel(later))} · 📍 ${escapeHtml(where(later))}</small>` : '<small>На две недели вперёд пар нет</small>'}</div>`;
+const target = st.lesson && findRoomByText(st.lesson.room) ? st.lesson : null;
+html += `<h3 class="prep-name">${escapeHtml(prepData.name)}</h3>${status}`;
+if (target) html += `<button class="map-btn plus-wide" data-act="room" data-room-text="${escapeHtml(target.room)}">🚶 Маршрут до ${escapeHtml(target.room)}</button>`;
+const days = [...new Set(prepData.lessons.map(l => l.date))].filter(d => d >= today);
+html += days.map(day => {
+const d = new Date(day + 'T12:00:00Z');
+const title = `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+return section(`${escapeHtml(title)}${day === today ? ' <span class="today-badge">сегодня</span>' : ''}`,
+prepData.lessons.filter(l => l.date === day).map(teacherLessonHtml).join(''));
+}).join('');
+html += `<p class="plus-note">По расписанию ЭИОС СтГАУ. Кафедру, консультации и замены вне расписания навигатор не видит.</p>`;
+}
+} else {
+html += `<input class="plus-input" id="prepInput" placeholder="Фамилия, например Данилов" maxlength="60" autocomplete="off" value="${escapeHtml(prepQuery)}">
+<div id="prepResults" class="prep-results"></div>
+<p class="plus-note">Покажем, где у преподавателя пара сейчас и куда идти, а ещё всё его расписание на две недели.</p>`;
+}
+plusBody.innerHTML = html;
+renderPrepResults();
+}
+const REPORT_KINDS = [['floor', 'Неверный этаж'], ['missing', 'Такого кабинета нет'], ['address', 'Неверный адрес корпуса'], ['route', 'Маршрут ведёт не туда'], ['other', 'Другое']];
+let reportRoom = null, reportKind = 'floor', reportSent = false;
+function openReport(roomId) {
+const room = roomsDatabase.find(r => r.id === roomId);
+if (!room) return;
+reportRoom = room; reportKind = 'floor'; reportSent = false;
+openSheet('report');
+}
+function renderReportSheet() {
+if (reportSent) {
+plusBody.innerHTML = `<div class="plus-status on">✅ Спасибо! Сообщение отправлено<span>Исправим в ближайшем обновлении навигатора</span></div>
+<button class="map-btn plus-wide" data-act="close">Готово</button>`;
+return;
+}
+const r = reportRoom;
+plusBody.innerHTML = `
+<p class="plus-note">📍 <b>${escapeHtml(r.title)}</b> · ${escapeHtml(r.unitName)} · ${escapeHtml(r.location)}</p>
+${section('Что не так?', `<div class="report-kinds">${REPORT_KINDS.map(([k, t]) => `<button class="room-chip${k === reportKind ? ' on' : ''}" data-act="report-kind" data-kind="${k}">${t}</button>`).join('')}</div>`)}
+${section('Подробнее (необязательно)', `<textarea class="plus-input report-text" id="reportText" maxlength="500" rows="3" placeholder="Например: кабинет на 4 этаже, вход со двора"></textarea>`)}
+<button class="map-btn plus-wide" data-act="report-send">Отправить</button>
+<p class="plus-note">Сообщение уйдёт автору навигатора. Спасибо — так навигатор становится точнее для всех.</p>`;
+}
+async function sendReport(btn) {
+btn.disabled = true;
+const text = (document.getElementById('reportText') || {}).value || '';
+try {
+await plusApi('/api/report', { room: favKey(reportRoom), where: `${reportRoom.unitName}, ${reportRoom.location}`, kind: reportKind, text });
+reportSent = true;
+haptic('medium');
+renderSheet();
+} catch (err) { showPlusToast(err.message); btn.disabled = false; }
+}
+let calUrl = null;
+async function showCalendar(btn) {
+btn.disabled = true;
+try {
+if (!calUrl) calUrl = (await plusApi('/api/calendar', {})).url;
+const box = document.getElementById('calBox');
+const webcal = calUrl.replace(/^https?:/, 'webcal:');
+box.innerHTML = `
+<button class="plus-plan" data-act="cal-open" data-url="${escapeHtml(webcal)}"><span><b>iPhone, iPad, Mac</b><small>подписка в Календаре Apple</small></span><em>›</em></button>
+<button class="plus-plan" data-act="cal-open" data-url="${escapeHtml('https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(webcal))}"><span><b>Google Календарь</b><small>Android и компьютер</small></span><em>›</em></button>
+<button class="plus-plan" data-act="cal-copy" data-url="${escapeHtml(calUrl)}"><span><b>Скопировать ссылку</b><small>для любого календаря</small></span><em>⧉</em></button>
+<p class="plus-note">Пары на 3 недели вперёд, обновляются сами и с напоминанием за 15 минут. Если кнопка не сработала: скопируй ссылку и добавь её в календаре как «подписной календарь» («Добавить по URL» в Google Календаре на компьютере).</p>`;
+btn.hidden = true;
+} catch (err) { showPlusToast(err.message); }
+btn.disabled = false;
+}
+function openCalendarLink(url) {
+if (url.startsWith('webcal:')) {
+if (inTelegram) { try { tg.openLink(url.replace(/^webcal:/, 'https:')); return; } catch (err) { /* ниже */ } }
+window.location.href = url;
+return;
+}
+openUrl(url);
+}
+async function copyText(text) {
+try { await navigator.clipboard.writeText(text); showToast('Ссылка скопирована'); }
+catch (err) { window.prompt('Скопируй ссылку:', text); }
+}
+function extraAction(el) {
+const act = el.dataset.act;
+if (act === 'prep') { haptic('light'); if (el.dataset.id) { if (!isPlusOpen || sheetMode !== 'prep') openSheet('prep'); loadTeacher(el.dataset.id); } else openPrep(); return true; }
+if (act === 'prep-back') { prepData = null; prepError = null; renderSheet(); return true; }
+if (act === 'free') { haptic('light'); openFree(el.dataset.unit); return true; }
+if (act === 'report-kind') { reportKind = el.dataset.kind; plusBody.querySelectorAll('[data-act="report-kind"]').forEach(b => b.classList.toggle('on', b === el)); return true; }
+if (act === 'report-send') { sendReport(el); return true; }
+if (act === 'calendar') { showCalendar(el); return true; }
+if (act === 'cal-open') { openCalendarLink(el.dataset.url); return true; }
+if (act === 'cal-copy') { copyText(el.dataset.url); return true; }
+return false;
+}
 function showPlusToast(text) {
 if (tg && typeof tg.showAlert === 'function' && tgSupports('6.2')) { try { tg.showAlert(text); return; } catch (err) { /* ниже */ } }
 alert(text);
 }
 async function plusAction(el) {
+if (extraAction(el)) return;
 const act = el.dataset.act;
 if (act === 'close') return closePlus();
 if (act === 'bot') return openUrl(BOT_LINK);
@@ -2244,10 +2561,17 @@ const el = e.target.closest('[data-act]');
 if (el && el.tagName !== 'INPUT') plusAction(el);
 });
 plusSheet.addEventListener('change', async (e) => {
+if (e.target.dataset.act === 'evening') {
+try { await plusApi('/api/evening', { on: e.target.checked }); plusState.user.evening = e.target.checked; }
+catch (err) { e.target.checked = !e.target.checked; showPlusToast(err.message); }
+}
 if (e.target.dataset.act === 'remind') {
 try { await plusApi('/api/remind', { on: e.target.checked }); plusState.user.remind = e.target.checked; }
 catch (err) { e.target.checked = !e.target.checked; showPlusToast(err.message); }
 }
+});
+plusSheet.addEventListener('input', (e) => {
+if (e.target.id === 'prepInput') searchTeachers(e.target.value);
 });
 plusSheet.addEventListener('keydown', (e) => {
 if (e.key === 'Enter' && e.target.id === 'plusGroupInput') {
@@ -2258,6 +2582,8 @@ if (btn) plusAction(btn);
 document.getElementById('routeContent').addEventListener('click', (e) => {
 const el = e.target.closest('[data-act="fav"]');
 if (el) toggleFav(el);
+const rep = e.target.closest('[data-report]');
+if (rep) openReport(rep.dataset.report);
 });
 setInterval(() => { if (plusState) renderPlusCard(); }, 60000);
 loadPlus().then(() => {
@@ -2270,6 +2596,10 @@ const hash = decodeURIComponent(location.hash || '');
 if (hash.startsWith('#room=')) openRoomByText(hash.slice(6));
 else if (hash === '#plus') openPlus();
 else if (hash === '#rasp') openRasp();
+else if (hash.startsWith('#prep')) openPrep(hash.slice(6) || null);
+else if (hash.startsWith('#free')) openFree(hash.slice(6) || null);
+else if (hash === '#search') setTimeout(() => searchInput.focus(), 300);
+else if (hash === '#last') { const last = readRecent()[0]; const r = last && findRoomByText(last); if (r) selectRoom(r.id); }
 });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
 navigator.serviceWorker.register('sw.js').catch(() => { /* нет поддержки — работаем как раньше */ });
