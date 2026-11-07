@@ -75,7 +75,8 @@
             var timer = setTimeout(function () { showOffer('Долго грузится?'); }, TIMEOUT);
 
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'app.html', true);
+            // Метка времени — чтобы браузер не подсовывал свою старую копию (в Telegram на iPhone нет офлайн-кэша)
+            xhr.open('GET', 'app.html?v=' + Date.now(), true);
             xhr.onload = function () {
                 if (done) return;
                 if (xhr.status !== 200 || xhr.responseText.indexOf('Навигатор СтГАУ') < 0) {

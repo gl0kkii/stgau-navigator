@@ -575,6 +575,7 @@ body.sheet-open { overflow: hidden; }
 body.sheet-open .optimize-btn { opacity: 0; pointer-events: none; }
 .page-foot { margin: 18px 0 72px; text-align: center; font-size: 12px; }
 .page-foot a { color: var(--text-secondary); text-decoration: none; }
+.page-foot .build-id { color: var(--text-tertiary); }
 .plus-sheet {
 position: fixed; inset: 0; z-index: 1100;
 background: rgba(0, 0, 0, 0.45);
@@ -796,7 +797,7 @@ html.wow body:not(.optimized) .search-wrapper.fullscreen .search-box { animation
 @media (max-width: 560px) {
 html.wow .content-layout.active-details .info-route-panel { max-height: 1000px; }
 }
-.wow-tower { position: relative; height: max(170px, calc(122px + var(--floors) * 20px)); margin: -4px 0 8px; overflow: hidden; }
+.wow-tower { position: relative; height: max(170px, calc(122px + var(--floors) * 20px)); margin: -4px 0 8px; overflow: visible; }
 .wow-scene { position: absolute; inset: 0; perspective: 900px; perspective-origin: 50% 30%; }
 .wow-stack { position: absolute; left: 50%; bottom: 18px; width: 92px; height: 92px; margin-left: -46px; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(45deg); }
 .wow-slab { position: absolute; inset: 0; transform-style: preserve-3d; transform: translate3d(0, 0, calc(var(--n) * 22px)); transition: transform 0.7s var(--wow-spring), opacity 0.45s ease; animation: wowSlabIn 0.6s var(--wow-spring) backwards; animation-delay: calc(var(--n) * 75ms); }
@@ -908,7 +909,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a></p>
+    <p class="page-foot"><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 07.11.2026 23:44</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -2263,6 +2264,15 @@ if (!offline && authed && plusOffline) loadPlus();   // связь вернул�
 window.addEventListener('online', updateOnlineState);
 window.addEventListener('offline', updateOnlineState);
 updateOnlineState();
+let userActed = false;
+['pointerdown', 'keydown', 'scroll'].forEach(ev => window.addEventListener(ev, () => { userActed = true; }, { once: true, passive: true }));
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.addEventListener('message', (e) => {
+if (!e.data || e.data.type !== 'stgau-updated') return;
+if (!userActed && performance.now() < 8000) location.reload();
+else showToast('Навигатор обновлён — изменения появятся при следующем запуске');
+});
+}
 function viewportSegments() {
 if (window.viewport && window.viewport.segments) return window.viewport.segments;
 if (window.visualViewport && window.visualViewport.segments) return window.visualViewport.segments;

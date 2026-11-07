@@ -3,14 +3,15 @@
    ---------------------------------------------------------------------
    После первого открытия сайт целиком сохраняется на телефоне и потом
    открывается без интернета: кабинеты, этажи, маршруты, столовые.
-   Страница: если копия уже есть, показываем её мгновенно и тихо обновляем на
-   следующий запуск. При самом первом открытии ждём сеть.
+   Страница: если копия уже есть, показываем её мгновенно и тихо проверяем сервер.
+   Нашлась новая версия — страница сама перезагрузится, пока её ещё не трогали.
+   При самом первом открытии ждём сеть.
    Запросы к серверу Студент+ (workers.dev) не трогаем — их данные
    страница сама хранит у себя.
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v4';
+const CACHE = 'stgau-nav-v5';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -45,10 +46,22 @@ function withTimeout(promise) {
 // key — под каким именем храним копию: запускатор или навигатор
 async function networkFirst(request, key) {
     const cache = await caches.open(CACHE);
-    const network = fetch(request).then(res => { if (res.ok) cache.put(key, res.clone()); return res; });
-    // Копия уже есть — открываем мгновенно, свежая версия покажется при следующем запуске
+    // no-cache: браузер переспрашивает сервер, а не берёт свою 10-минутную копию
+    const network = fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
+        .then(res => { if (res.ok) cache.put(key, res.clone()); return res; });
+    // Копия уже есть — открываем мгновенно. Если на сервере новее — сообщаем странице
     const ready = (await cache.match(key)) || (key === PAGE && await cache.match('./'));
-    if (ready) { network.catch(() => {}); return ready; }
+    if (ready) {
+        const old = ready.clone();
+        network.then(async (res) => {
+            if (!res.ok || key !== APP) return;
+            const [a, b] = await Promise.all([old.text(), res.clone().text()]);
+            if (a === b) return;
+            const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+            clients.forEach(c => c.postMessage({ type: 'stgau-updated' }));
+        }).catch(() => {});
+        return ready;
+    }
     try {
         return await withTimeout(network);
     } catch (err) {
