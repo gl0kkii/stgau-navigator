@@ -1611,11 +1611,13 @@ swapContent(`
 <div class="room-chip" data-unit="${escapeHtml(room.unit)}" style="display: inline-block; font-size: 12px;">${room.unitPlace ? '← Все столовые' : `← Все кабинеты ${escapeHtml(room.unit)}`}</div>
 </div>
 `, 250);
-setTimeout(() => {
+const toRoute = () => {
 const panel = document.getElementById('infoRoutePanel');
 const top = panel.getBoundingClientRect().top;
-if (top < 0 || top > window.innerHeight * 0.3) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}, 300);
+if (top < -2 || top > Math.min(40, window.innerHeight * 0.3)) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+setTimeout(toRoute, 300);
+setTimeout(toRoute, 900);
 }
 const RECENT_KEY = 'stgau-recent';
 const recentKey = (room) => `${room.unit} ${room.number}`;
