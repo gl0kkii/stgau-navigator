@@ -935,7 +935,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:52</span></p>
+    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 00:55</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -2592,15 +2592,20 @@ const cached = readRaspCache();
 if (cached) { raspWeeks = cached; renderPlusCard(); }
 loadRaspAll();
 }
-const hash = decodeURIComponent(location.hash || '');
+openHash(location.hash);
+});
+function openHash(raw) {
+let hash = '';
+try { hash = decodeURIComponent(raw || ''); } catch (err) { return; }
 if (hash.startsWith('#room=')) openRoomByText(hash.slice(6));
 else if (hash === '#plus') openPlus();
 else if (hash === '#rasp') openRasp();
 else if (hash.startsWith('#prep')) openPrep(hash.slice(6) || null);
 else if (hash.startsWith('#free')) openFree(hash.slice(6) || null);
-else if (hash === '#search') setTimeout(() => searchInput.focus(), 300);
-else if (hash === '#last') { const last = readRecent()[0]; const r = last && findRoomByText(last); if (r) selectRoom(r.id); }
-});
+else if (hash === '#search') { if (isPlusOpen) closePlus(true); setTimeout(() => searchInput.focus(), 300); }
+else if (hash === '#last') { const last = readRecent()[0]; const r = last && findRoomByText(last); if (r) { if (isPlusOpen) closePlus(true); selectRoom(r.id); } }
+}
+window.__stgauOpen = openHash;
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
 navigator.serviceWorker.register('sw.js').catch(() => { /* нет поддержки — работаем как раньше */ });
 }
