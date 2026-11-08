@@ -39,12 +39,7 @@
     </div>
     <script>
         (function () {
-            var MAIN = 'https://stgau-navigator.pages.dev/';
-
-            // Старый адрес (GitHub): навигатор переехал. Людей сразу отправляем на новый адрес;
-            // старые версии приложения для Android остаются здесь, но берут свежий навигатор с нового адреса
-            var LEGACY = location.hostname === 'gl0kkii.github.io';
-            if (LEGACY && !/StgauNavApp/.test(navigator.userAgent)) { location.replace(MAIN + location.hash); return; }
+            var MAIN = 'https://gl0kkii.github.io/stgau-navigator/';
             var MIRROR = 'https://stgau-bot.vkyyfwr6w6.workers.dev/app/';
             var TIMEOUT = 10000;
 
@@ -81,8 +76,7 @@
 
             var xhr = new XMLHttpRequest();
             // Метка времени — чтобы браузер не подсовывал свою старую копию (в Telegram на iPhone нет офлайн-кэша)
-            var appUrl = (LEGACY ? MAIN : '') + 'app.html?v=' + Date.now();
-            xhr.open('GET', appUrl, true);
+            xhr.open('GET', 'app.html?v=' + Date.now(), true);
             xhr.onload = function () {
                 if (done) return;
                 if (xhr.status !== 200 || xhr.responseText.indexOf('Навигатор СтГАУ') < 0) {
@@ -98,8 +92,6 @@
                 document.close();
             };
             xhr.onerror = function () {
-                // Старый адрес без связи с новым — пробуем свою сохранённую копию
-                if (LEGACY && xhr.__retry !== true) { xhr.__retry = true; xhr.open('GET', 'app.html', true); xhr.send(); return; }
                 clearTimeout(timer);
                 note.textContent = 'Сервер не отвечает.';
                 showOffer('Не получилось загрузить');
