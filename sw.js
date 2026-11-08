@@ -11,17 +11,27 @@
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v5';
+const CACHE = 'stgau-nav-v6';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
 
+// Cloudflare Pages укорачивает адреса (index.html → /, app.html → /app) перенаправлением.
+// Ответ «после перенаправления» браузер не даёт показывать как страницу — поэтому храним его копию без этой пометки.
+async function clean(res) {
+    if (!res || !res.redirected) return res;
+    return new Response(await res.blob(), { status: res.status, statusText: res.statusText, headers: res.headers });
+}
+
 self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE)
-            .then(cache => cache.addAll(['./', PAGE, APP, './watermark.png']))
-            .then(() => self.skipWaiting())
-    );
+    event.waitUntil((async () => {
+        const cache = await caches.open(CACHE);
+        await Promise.all(['./', PAGE, APP, './watermark.png'].map(async (url) => {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res.ok) await cache.put(url, await clean(res));
+        }));
+        await self.skipWaiting();
+    })());
 });
 
 self.addEventListener('activate', (event) => {
@@ -48,9 +58,10 @@ async function networkFirst(request, key) {
     const cache = await caches.open(CACHE);
     // no-cache: браузер переспрашивает сервер, а не берёт свою 10-минутную копию
     const network = fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
+        .then(clean)
         .then(res => { if (res.ok) cache.put(key, res.clone()); return res; });
     // Копия уже есть — открываем мгновенно. Если на сервере новее — сообщаем странице
-    const ready = (await cache.match(key)) || (key === PAGE && await cache.match('./'));
+    const ready = await clean((await cache.match(key)) || (key === PAGE && await cache.match('./')));
     if (ready) {
         const old = ready.clone();
         network.then(async (res) => {
@@ -65,7 +76,7 @@ async function networkFirst(request, key) {
     try {
         return await withTimeout(network);
     } catch (err) {
-        const saved = (await cache.match(key)) || (key === PAGE && await cache.match('./'));
+        const saved = await clean((await cache.match(key)) || (key === PAGE && await cache.match('./')));
         if (saved) return saved;
         // Сохранённой копии ещё нет — ждём сеть сколько потребуется, не обрываем медленную загрузку
         return network.catch(() => Response.error());
