@@ -621,6 +621,8 @@ body.sheet-open .optimize-btn { opacity: 0; pointer-events: none; }
 .page-foot { margin: 18px 0 72px; text-align: center; font-size: 12px; }
 .page-foot a { color: var(--text-secondary); text-decoration: none; }
 .page-foot .build-id { color: var(--text-tertiary); }
+.page-foot .foot-app { margin-right: 6px; }
+.page-foot .foot-app[hidden] { display: none; }
 .page-foot .foot-channel { display: inline-block; margin-bottom: 10px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 13px; }
 .plus-sheet {
 position: fixed; inset: 0; z-index: 1100;
@@ -958,7 +960,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 12:24</span></p>
+    <p class="page-foot"><a class="foot-channel foot-app" href="https://gl0kkii.github.io/stgau-navigator/android.html" onclick="openUrl(this.href); return false;" hidden><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5M10.5 18h3"/></svg>Приложение для Android</a><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 18:24</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -2831,6 +2833,7 @@ else if (hash === '#search') { if (isPlusOpen) closePlus(true); setTimeout(() =>
 else if (hash === '#last') { const last = readRecent()[0]; const r = last && findRoomByText(last); if (r) { if (isPlusOpen) closePlus(true); selectRoom(r.id); } }
 }
 window.__stgauOpen = openHash;
+if (/Android/i.test(navigator.userAgent) && !androidApp) { const fa = document.querySelector('.foot-app'); if (fa) fa.hidden = false; }
 if (!readLocal(TOUR_DONE_KEY)) { const tb = document.querySelector('.tour-banner'); if (tb) tb.hidden = false; }
 setTimeout(() => { if (navigator.onLine !== false && !readLocal(TEACHERS_KEY)) loadTeacherList().catch(() => {}); }, 6000);
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

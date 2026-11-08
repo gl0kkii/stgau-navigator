@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Навигатор СтГАУ для Android</title>
+    <meta name="description" content="Приложение «Навигатор СтГАУ» для Android: кабинеты, этажи в 3D, расписание и виджет со следующей парой.">
+    <meta name="theme-color" content="#090a0f">
+    <style>
+        :root { color-scheme: dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: #090a0f; color: #f2f2f7;
+            font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-image: radial-gradient(ellipse at 50% -10%, rgba(255, 255, 255, 0.10), transparent 60%);
+        }
+        main { max-width: 560px; margin: 0 auto; padding: calc(32px + env(safe-area-inset-top)) 16px 56px; }
+        .head { display: flex; gap: 16px; align-items: center; margin-bottom: 22px; }
+        .head img { width: 76px; height: 76px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+        .meta { margin-top: 4px; color: rgba(235, 235, 245, 0.6); font-size: 13px; }
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 54px;
+            border-radius: 16px; background: #fff; color: #090a0f; font-size: 17px; font-weight: 700; text-decoration: none;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .note { margin: 10px 2px 0; color: rgba(235, 235, 245, 0.55); font-size: 13px; text-align: center; }
+        .card {
+            margin-top: 18px; padding: 16px 18px; border-radius: 18px;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.10);
+        }
+        .card h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(235, 235, 245, 0.6); font-weight: 600; }
+        ul, ol { margin: 0; padding-left: 20px; }
+        li { margin: 6px 0; color: rgba(235, 235, 245, 0.85); }
+        li b { color: #fff; }
+        .hash { font: 11px/1.4 ui-monospace, Menlo, monospace; word-break: break-all; color: rgba(235, 235, 245, 0.45); }
+        .ios { display: none; }
+        .is-ios .ios { display: block; }
+        .is-ios .android-only { display: none; }
+        a { color: #fff; }
+    </style>
+</head>
+<body>
+<main>
+    <div class="head">
+        <img src="android-icon.png" alt="">
+        <div>
+            <h1>Навигатор СтГАУ</h1>
+            <div class="meta">Android 7.0 и новее · версия 1.1 · 0,4 МБ</div>
+        </div>
+    </div>
+
+    <div class="card ios">
+        <h2>У тебя iPhone</h2>
+        <p style="margin: 0;">Приложение пока только для Android. На iPhone навигатор открывается в Telegram: <a href="https://t.me/stgau_navigation_bot">@stgau_navigation_bot</a> → кнопка «Навигатор».</p>
+    </div>
+
+    <div class="android-only">
+        <a class="btn" href="stgau-navigator.apk" download="stgau-navigator.apk">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>
+            Скачать приложение
+        </a>
+        <p class="note">Скоро — в RuStore. Это тот же файл, что уходит в магазин.</p>
+
+        <div class="card">
+            <h2>Как установить</h2>
+            <ol>
+                <li>Нажми <b>«Скачать приложение»</b>. Если ты в Telegram — сначала <b>⋮ → «Открыть в браузере»</b>.</li>
+                <li>Открой скачанный файл <b>stgau-navigator.apk</b> (из уведомления или «Загрузок»).</li>
+                <li>Телефон спросит про <b>установку из неизвестных источников</b> — разреши для браузера. Так Android спрашивает про любое приложение не из магазина.</li>
+                <li>Нажми <b>«Установить»</b>, потом «Открыть».</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Что умеет</h2>
+        <ul>
+            <li><b>Любой кабинет</b> — корпус, этаж в 3D и пеший маршрут</li>
+            <li><b>Виджет «Следующая пара»</b> на рабочем столе</li>
+            <li><b>Ярлыки</b>: долгое нажатие на иконку — поиск, расписание, свободные аудитории</li>
+            <li><b>Расписание группы</b>, преподаватели, свободные аудитории, экзамены</li>
+            <li><b>Работает без интернета</b> — кабинеты и маршруты всегда с тобой</li>
+            <li>Вход через Telegram — Студент+ и избранное как в боте</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Проверка файла</h2>
+        <p class="hash" style="margin: 0;">SHA-256: 8b787c590b505e36853be89242e33a893f4f7e20e733648bad5009c179f0f65d</p>
+    </div>
+
+    <p class="note"><a href="./">Открыть навигатор в браузере</a> · <a href="privacy.html">Конфиденциальность</a></p>
+</main>
+<script>
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.documentElement.className = 'is-ios';
+</script>
+</body>
+</html>
