@@ -528,6 +528,15 @@ transition: transform 0.35s var(--ios-spring), background 0.2s ease;
 .lesson-kind.is-change { background: rgba(255, 214, 10, 0.2); color: var(--ios-yellow); }
 @media (max-width: 560px) { .quick-bar { grid-template-columns: repeat(2, 1fr); } }
 .quick-btn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qi { width: 1.15em; height: 1.15em; margin-right: 0.45em; vertical-align: -0.22em; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.quick-btn .qi { opacity: 0.85; }
+.plus-kicker .qi { width: 1.2em; height: 1.2em; margin-right: 0.3em; vertical-align: -0.25em; }
+.plus-kicker .qi + .qi, .plus-kicker .qi:not(:first-child) { margin-left: 0.15em; }
+.dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; vertical-align: 1px; background: var(--ios-label-3); }
+.dot.free { background: #30d158; box-shadow: 0 0 8px rgba(48, 209, 88, 0.6); }
+.dot.busy { background: #ff453a; box-shadow: 0 0 8px rgba(255, 69, 58, 0.5); }
+.dot.soon { background: #ff9f0a; box-shadow: 0 0 8px rgba(255, 159, 10, 0.5); }
+.plus-section h3 .dot { margin-right: 6px; }
 .transfer { margin: 2px 0 6px; padding: 7px 12px; border-radius: 10px; background: rgba(118, 118, 128, 0.14); color: var(--ios-label-2); font-size: 12px; }
 .transfer.warn { background: rgba(255, 159, 10, 0.16); color: #ffb340; }
 .plus-sub .transfer-line { display: block; margin-top: 3px; color: #ffb340; }
@@ -913,10 +922,10 @@ body.wow-intro > * { animation-play-state: running !important; }
     </div>
 
     <div class="quick-bar" id="quickBar">
-        <button class="quick-btn" data-act="rasp">📅 Расписание</button>
-        <button class="quick-btn" data-act="open">⭐ Студент+</button>
-        <button class="quick-btn" data-act="prep">👨‍🏫 Преподаватель</button>
-        <button class="quick-btn" data-act="free">🟢 Свободные</button>
+        <button class="quick-btn" data-act="rasp"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Расписание</button>
+        <button class="quick-btn" data-act="open"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.6l-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/></svg>Студент+</button>
+        <button class="quick-btn" data-act="prep"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20.5c.8-3.8 3.6-5.8 7-5.8s6.2 2 7 5.8"/></svg>Преподаватель</button>
+        <button class="quick-btn" data-act="free"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5h17M6.5 20.5V4.5h11v16"/><path d="M14.2 12.5h.01"/></svg>Свободные</button>
     </div>
 
     <div class="plus-card" id="plusCard" hidden></div>
@@ -935,7 +944,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;">📣 Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 01:05</span></p>
+    <p class="page-foot"><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 08.11.2026 11:50</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
@@ -963,6 +972,20 @@ if (androidApp && !(tg && tg.initData)) { try { androidApp.haptic(String(style))
 if (!tgSupports('6.1')) return;
 try { tg.HapticFeedback.impactOccurred(style); } catch (err) { /* нет поддержки — молчим */ }
 }
+const ICON_PATHS = {
+cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+calplus: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4M12 12.8v5M9.5 15.3h5"/>',
+star: '<path d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.6l-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+starOn: '<path fill="currentColor" d="M12 3.6l2.5 5.2 5.7.8-4.1 4 1 5.7L12 16.6l-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>',
+lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
+walk: '<path d="M4.5 12h14M13.5 6.5l5.5 5.5-5.5 5.5"/>',
+bus: '<rect x="4.5" y="4" width="15" height="13.5" rx="3"/><path d="M4.5 11h15M8 20.5v-3M16 20.5v-3M8.5 14.3h.01M15.5 14.3h.01"/>',
+pin: '<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.3"/>',
+share: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5"/><path d="M5 12.5v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>',
+flag: '<path d="M5.5 21V4M5.5 4.5h11l-2.2 4 2.2 4h-11"/>'
+};
+const ic = (name) => `<svg class="qi" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name]}</svg>`;
+const dot = (kind) => `<i class="dot ${kind}"></i>`;
 function escapeHtml(value) {
 return String(value)
 .replace(/&/g, '&amp;')
@@ -1144,11 +1167,11 @@ function mapButtonsHtml(b) {
 if (!b) return '';
 const addr = escapeHtml(b.address);
 return `
-<button class="map-btn route-btn" data-map="yandex" data-addr="${addr}">🚶 Маршрут пешком</button>
+<button class="map-btn route-btn" data-map="yandex" data-addr="${addr}">${ic('walk')}Маршрут пешком</button>
 <div class="map-actions">
 <button class="map-btn" data-map="google" data-addr="${addr}">Google</button>
 <button class="map-btn" data-map="apple" data-addr="${addr}">Apple</button>
-${COORDS[b.address] ? `<button class="map-btn" data-from-me="${addr}">📍 Сколько идти</button>` : ''}
+${COORDS[b.address] ? `<button class="map-btn" data-from-me="${addr}">${ic('pin')}Сколько идти</button>` : ''}
 </div>
 `;
 }
@@ -1576,6 +1599,7 @@ showDetails(room);
 function selectUnit(code) {
 const unit = UNITS.find(u => u.code === code);
 if (!unit) return;
+if (!unit.place && navigator.onLine !== false) loadBusy(code).catch(() => {});
 playSound('corpus');
 haptic('light');
 closeFullscreenSearch(null, true);
@@ -1629,10 +1653,10 @@ ${food ? `
 <small>${escapeHtml(walkLabel(food.walk))} · ${statusHtml(foodStatus())}</small>
 </div>` : ''}
 <div class="route-extra">
-<button class="map-btn" data-share="${room.id}">📤 Поделиться</button>
+<button class="map-btn" data-share="${room.id}">${ic('share')}Поделиться</button>
 ${favButtonHtml(room)}
 </div>
-${room.unitPlace ? '' : `<button class="report-link" data-report="${room.id}">⚠️ Нашёл ошибку в этом кабинете</button>`}
+${room.unitPlace ? '' : `<button class="report-link" data-report="${room.id}">${ic('flag')}Нашёл ошибку в этом кабинете</button>`}
 `;
 rememberRecent(room);
 if (room.numbered && !room.unitPlace) loadRoomStatus(room);
@@ -1729,14 +1753,14 @@ navigator.geolocation.getCurrentPosition(
 async function howFarFromMe(btn) {
 const target = COORDS[btn.dataset.fromMe];
 btn.disabled = true;
-btn.textContent = '📍 Определяем…';
+btn.innerHTML = ic('pin') + 'Определяем…';
 try {
 const me = await getMyLocation();
 const w = walkBetween(me, target);
-btn.textContent = w.meters > 15000 ? '📍 Вы далеко от вуза' : `📍 ${walkLabel(w)}`;
+btn.innerHTML = ic('pin') + escapeHtml(w.meters > 15000 ? 'Вы далеко от вуза' : walkLabel(w));
 haptic('light');
 } catch (err) {
-btn.textContent = '📍 Сколько идти';
+btn.innerHTML = ic('pin') + 'Сколько идти';
 btn.disabled = false;
 showToast(err.message + '. Разрешите доступ к местоположению.');
 }
@@ -1979,7 +2003,7 @@ let html;
 if (!authed && loginWait) {
 html = `
 <div class="plus-row" data-act="login">
-<div><div class="plus-kicker">🔐 Вход через Telegram</div>
+<div><div class="plus-kicker">${ic('lock')}Вход через Telegram</div>
 <div class="plus-title">Подтверди вход в боте</div>
 <div class="plus-sub">Нажми «✅ Да, войти» в боте и вернись сюда. Бот не открылся? Нажми ещё раз</div></div>
 <span class="plus-chevron">›</span>
@@ -1987,7 +2011,7 @@ html = `
 } else if (!authed) {
 html = `
 <div class="plus-row" data-act="login">
-<div><div class="plus-kicker">📅 Расписание и ⭐ Студент+</div>
+<div><div class="plus-kicker">${ic('cal')}Расписание и ${ic('star')}Студент+</div>
 <div class="plus-title">Войти через Telegram</div>
 <div class="plus-sub">Пары, избранное и напоминания — как в боте</div></div>
 <span class="plus-chevron">›</span>
@@ -1997,7 +2021,7 @@ html = `<div class="plus-sub">${plusError ? '⚠️ Сервер временн�
 } else if (!plusState.group) {
 html = `
 <div class="plus-row" data-act="rasp">
-<div><div class="plus-kicker">📅 Расписание</div>
+<div><div class="plus-kicker">${ic('cal')}Расписание</div>
 <div class="plus-title">Выбери свою группу</div>
 <div class="plus-sub">Пары подтянутся с сайта СтГАУ сами${plusState.trialAvailable ? ` · ${plusState.trialDays} дней Студент+ бесплатно` : ''}</div></div>
 <span class="plus-chevron">›</span>
@@ -2019,13 +2043,13 @@ html = `
 <div class="plus-row" data-act="${room ? 'room' : 'rasp'}" data-room-text="${escapeHtml(next.room)}">
 <div><div class="plus-kicker">${escapeHtml(whenLabel(next))} · ${escapeHtml(plusState.group.id)}</div>
 <div class="plus-title">${escapeHtml(next.subj || 'Пара')}</div>
-<div class="plus-sub">📍 ${escapeHtml(room ? next.room : (next.aud || 'аудитория не указана'))}${room ? ` · ${escapeHtml(room.location)}` : ''}${next.kind ? ` · ${escapeHtml(next.kind.toLowerCase())}` : ''}${move && !move.ok ? `<span class="transfer-line">${escapeHtml(transferText(move))}</span>` : ''}</div></div>
+<div class="plus-sub">📍 ${escapeHtml(room ? next.room : (next.aud || 'аудитория не указана'))}${room ? ` · ${escapeHtml(room.location)}` : ''}${next.kind ? ` · ${escapeHtml(next.kind.toLowerCase())}` : ''}${move && !move.ok ? `<span class="transfer-line">${ic(move.walk > 30 ? 'bus' : 'walk')}${escapeHtml(transferText(move))}</span>` : ''}</div></div>
 <span class="plus-chevron">›</span>
 </div>`;
 } else {
 html = `
 <div class="plus-row" data-act="rasp">
-<div><div class="plus-kicker">⭐ Студент+ · ${escapeHtml(plusState.group.id)}</div>
+<div><div class="plus-kicker">${ic('star')}Студент+ · ${escapeHtml(plusState.group.id)}</div>
 <div class="plus-title">${raspLoading || !raspWeeks[0] ? 'Загружаем расписание…' : 'Ближайшие две недели пар нет'}</div>
 <div class="plus-sub">Расписание берётся с сайта СтГАУ</div></div>
 <span class="plus-chevron">›</span>
@@ -2143,7 +2167,7 @@ if (st.active) {
 const favs = s.user.favs || [];
 html += section('Избранные кабинеты', favs.length
 ? `<div class="chip-row">${favs.map(f => `<button class="room-chip" data-act="fav-open" data-room-text="${escapeHtml(f)}">${escapeHtml(f)}</button>`).join('')}</div>`
-: `<p class="plus-note">Открой кабинет и нажми «☆ В избранное».</p>`);
+: `<p class="plus-note">Открой кабинет и нажми «В избранное».</p>`);
 html += section('Напоминания', `
 <label class="plus-switch">
 <span>Писать в боте за 15 минут до пары</span>
@@ -2154,7 +2178,7 @@ html += section('Напоминания', `
 <input type="checkbox" data-act="evening" ${s.user.evening !== false ? 'checked' : ''}><i></i>
 </label>`);
 if (s.group) html += section('Календарь', `
-<button class="map-btn plus-wide" data-act="calendar">📆 Пары в календарь телефона</button>
+<button class="map-btn plus-wide" data-act="calendar">${ic('calplus')}Пары в календарь телефона</button>
 <div id="calBox"></div>`);
 }
 if (st.source !== 'forever') {
@@ -2175,7 +2199,7 @@ const done = s.ref.count % s.ref.goal;
 html += section('Приведи друзей', `
 <p class="plus-note">Когда ${s.ref.goal} друга выберут группу — получишь ${s.ref.bonusDays} дней Студент+. Сейчас: <b>${done} из ${s.ref.goal}</b>${s.ref.count >= s.ref.goal ? ` · всего приглашено ${s.ref.count}` : ''}</p>
 <div class="plus-progress"><i style="width:${Math.round(done / s.ref.goal * 100)}%"></i></div>
-<button class="map-btn plus-wide" data-act="share">📤 Поделиться ссылкой</button>
+<button class="map-btn plus-wide" data-act="share">${ic('share')}Поделиться ссылкой</button>
 `);
 if (!inTelegram) html += `<button class="map-btn plus-wide plus-logout" data-act="logout">Выйти из аккаунта</button>`;
 plusBody.innerHTML = html;
@@ -2184,7 +2208,7 @@ const favKey = (room) => `${room.unit} ${room.number}`;
 function favButtonHtml(room) {
 if (!authed || room.unitPlace) return '';
 const on = !!(plusState && plusState.user.favs.includes(favKey(room)));
-return `<button class="map-btn plus-wide fav-btn" data-act="fav" data-room-text="${escapeHtml(favKey(room))}">${on ? '★ В избранном' : '☆ В избранное'}</button>`;
+return `<button class="map-btn plus-wide fav-btn" data-act="fav" data-room-text="${escapeHtml(favKey(room))}">${on ? ic('starOn') + 'В избранном' : ic('star') + 'В избранное'}</button>`;
 }
 async function toggleFav(btn) {
 if (!plusState || !plusState.plus.active) { openPlus(); return; }
@@ -2193,7 +2217,7 @@ const favs = plusState.user.favs.slice();
 const i = favs.indexOf(key);
 if (i > -1) favs.splice(i, 1); else favs.unshift(key);
 plusState.user.favs = favs;
-btn.textContent = i > -1 ? '☆ В избранное' : '★ В избранном';
+btn.innerHTML = i > -1 ? ic('star') + 'В избранное' : ic('starOn') + 'В избранном';
 haptic('light');
 try { await plusApi('/api/favs', { favs }); } catch (err) { showPlusToast(err.message); }
 }
@@ -2202,7 +2226,7 @@ const mskHm = () => mskNow().toISOString().slice(11, 16);
 const mskDay = () => mskNow().toISOString().slice(0, 10);
 async function publicApi(path) {
 const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
-const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+const timer = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
 try {
 const res = await fetch(PLUS_API + path, { signal: ctrl ? ctrl.signal : undefined });
 const data = await res.json().catch(() => ({}));
@@ -2223,9 +2247,9 @@ if (brk < 0 || brk > 45) return null;
 return { from: a.unit, to: b.unit, walk: w.minutes, brk, ok: w.minutes <= brk - 2 };
 }
 const transferText = (t) => t.walk > 30
-? `🚌 ${t.from} → ${t.to}: другой конец города, пешком ≈ ${t.walk} мин — нужен транспорт, перемена ${t.brk} мин`
-: `🚶 ${t.from} → ${t.to}: ≈ ${t.walk} мин пешком, перемена ${t.brk} мин${t.ok ? ' — успеваешь' : ' — выходи сразу!'}`;
-const transferHtml = (t) => `<div class="transfer${t.ok ? '' : ' warn'}">${escapeHtml(transferText(t))}</div>`;
+? `${t.from} → ${t.to}: другой конец города, пешком ≈ ${t.walk} мин — нужен транспорт, перемена ${t.brk} мин`
+: `${t.from} → ${t.to}: ≈ ${t.walk} мин пешком, перемена ${t.brk} мин${t.ok ? ' — успеваешь' : ' — выходи сразу!'}`;
+const transferHtml = (t) => `<div class="transfer${t.ok ? '' : ' warn'}">${ic(t.walk > 30 ? 'bus' : 'walk')}${escapeHtml(transferText(t))}</div>`;
 function lessonsWithTransfers(list) {
 return list.map((l, i) => {
 const t = i > 0 ? transferInfo(list[i - 1], l) : null;
@@ -2243,10 +2267,18 @@ let freeUnit = null;
 let freeData = null, freeError = null, freeLoading = false;
 async function loadBusy(unit, force) {
 const hit = busyCache[unit];
-if (hit && !force && Date.now() - hit.at < 5 * 60000) return hit.data;
+if (hit && !force && Date.now() - hit.at < 2 * 60000) return hit.data;
 const data = await publicApi('/api/busy?unit=' + encodeURIComponent(unit));
 busyCache[unit] = { at: Date.now(), data };
+if (data.known) writeLocal('stgau-busy-' + unit, JSON.stringify({ day: mskDay(), data }));
 return data;
+}
+function cachedBusy(unit) {
+if (busyCache[unit]) return busyCache[unit].data;
+try {
+const c = JSON.parse(readLocal('stgau-busy-' + unit) || 'null');
+return c && c.day === mskDay() ? c.data : null;
+} catch (err) { return null; }
 }
 function roomState(lessons, hm) {
 const cur = lessons.find(l => l.start <= hm && l.end > hm);
@@ -2258,9 +2290,12 @@ const numCmp = (a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0) || Stri
 async function openFree(unit) {
 freeUnit = unit || freeUnit || (FREE_UNITS.includes(currentUnit) ? currentUnit : null) || readLocal('stgau-free-unit') || 'НК';
 if (!isPlusOpen || sheetMode !== 'free') openSheet('free'); else renderSheet();
-freeData = null; freeError = null; freeLoading = true;
+freeData = cachedBusy(freeUnit); freeError = null; freeLoading = !freeData;
 renderSheet();
-try { freeData = await loadBusy(freeUnit); } catch (err) { freeError = err.message; }
+const unitNow = freeUnit;
+try { const fresh = await loadBusy(unitNow); if (unitNow === freeUnit) freeData = fresh; }
+catch (err) { if (!freeData) freeError = err.message; }
+if (unitNow !== freeUnit) return;
 freeLoading = false;
 writeLocal('stgau-free-unit', freeUnit);
 if (isPlusOpen && sheetMode === 'free') renderSheet();
@@ -2278,10 +2313,10 @@ const chip = (r, label) => `<button class="free-room${r.room ? '' : ' is-unknown
 if (!rows.length) html += `<p class="plus-note">${freeData.total ? `Расписание аудиторий ${escapeHtml(freeUnit)} ещё собирается — загляни чуть позже.` : `Для ${escapeHtml(freeUnit)} в ЭИОС нет списка аудиторий.`}</p>`;
 else {
 const offHours = new Date(mskDay() + 'T12:00:00Z').getUTCDay() === 0 || hm >= '20:30' || hm < '07:30';
-html += section(`🟢 Свободно сейчас · ${free.length} из ${rows.length}`, free.length
+html += section(`${dot('free')}Свободно сейчас · ${free.length} из ${rows.length}`, free.length
 ? `<div class="free-grid">${free.map(r => chip(r, r.st.until ? `до ${r.st.until}` : 'до конца дня')).join('')}</div>`
 : `<p class="plus-note">Сейчас по расписанию всё занято.</p>`);
-if (soon.length) html += section('⏳ Скоро освободятся', `<div class="free-grid">${soon.map(r => chip(r, `в ${r.st.until}`)).join('')}</div>`);
+if (soon.length) html += section(`${dot('soon')}Скоро освободятся`, `<div class="free-grid">${soon.map(r => chip(r, `в ${r.st.until}`)).join('')}</div>`);
 html += `<p class="plus-note">${freeData.total && freeData.known < freeData.total ? `Собрано ${freeData.known} из ${freeData.total} аудиторий — остальные появятся в течение часа. ` : ''}${offHours ? 'Сейчас пар нет — по расписанию свободно всё. ' : ''}По расписанию ЭИОС на сегодня: консультации и занятия вне расписания сюда не попадают. Нажми на аудиторию — откроется маршрут.</p>`;
 }
 }
@@ -2292,20 +2327,27 @@ const [h, m] = hm.split(':').map(Number);
 const t = h * 60 + m + min;
 return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 }
-async function loadRoomStatus(room) {
-const box = document.getElementById('roomStatus');
-if (!box) return;
-try {
-const data = await loadBusy(room.unit);
-if (!isDetailsOpen || box !== document.getElementById('roomStatus')) return;
+function paintRoomStatus(box, room, data) {
 const lessons = data.rooms[room.number];
-if (!lessons) { box.remove(); return; }
+if (!lessons) return false;
 const st = roomState(lessons, mskHm());
 box.className = 'room-status ' + (st.busy ? 'busy' : 'free');
 box.innerHTML = st.busy
-? `🔴 Сейчас пара до ${escapeHtml(st.until)}<small>${escapeHtml(st.lesson.subj || '')}${st.lesson.groups && st.lesson.groups.length ? ' · ' + escapeHtml(st.lesson.groups.join(', ')) : ''}</small>`
-: `🟢 Свободна ${st.until ? 'до ' + escapeHtml(st.until) : 'до конца дня'}<small>по расписанию ЭИОС на сегодня</small>`;
-} catch (err) { box.remove(); }
+? `${dot('busy')}Сейчас пара до ${escapeHtml(st.until)}<small>${escapeHtml(st.lesson.subj || '')}${st.lesson.groups && st.lesson.groups.length ? ' · ' + escapeHtml(st.lesson.groups.join(', ')) : ''}</small>`
+: `${dot('free')}Свободна ${st.until ? 'до ' + escapeHtml(st.until) : 'до конца дня'}<small>по расписанию ЭИОС на сегодня</small>`;
+return true;
+}
+async function loadRoomStatus(room) {
+const box = document.getElementById('roomStatus');
+if (!box) return;
+const alive = () => isDetailsOpen && box === document.getElementById('roomStatus');
+const quick = cachedBusy(room.unit);
+const shown = quick ? paintRoomStatus(box, room, quick) : false;
+try {
+const data = await loadBusy(room.unit);
+if (!alive()) return;
+if (!paintRoomStatus(box, room, data)) box.remove();
+} catch (err) { if (alive() && !shown) box.remove(); }
 }
 let prepQuery = '', prepResults = [], prepData = null, prepError = null, prepLoading = false, prepTimer = null;
 const readLocal = (k) => { try { return localStorage.getItem(k); } catch (err) { return null; } };
@@ -2314,18 +2356,52 @@ const readRecentPreps = () => { try { return JSON.parse(readLocal('stgau-recent-
 function openPrep(id) {
 if (!isPlusOpen || sheetMode !== 'prep') openSheet('prep');
 if (id) loadTeacher(id);
-else { prepData = null; renderSheet(); setTimeout(() => { const i = document.getElementById('prepInput'); if (i) i.focus(); }, 350); }
+else { prepView = false; prepData = null; renderSheet(); setTimeout(() => { const i = document.getElementById('prepInput'); if (i) i.focus(); }, 350); }
+}
+const TEACHERS_KEY = 'stgau-teachers';
+const teacherKey = (v) => String(v || '').toLowerCase().replace(/ё/g, 'е').replace(/[.\s]+/g, ' ').trim();
+let teacherList = null, teacherListLoad = null;
+function loadTeacherList() {
+if (teacherList) return Promise.resolve(teacherList);
+try {
+const c = JSON.parse(readLocal(TEACHERS_KEY) || 'null');
+if (c && Date.now() - c.at < 3 * DAY_MS && c.list && c.list.length) {
+teacherList = c.list.map(([id, name]) => ({ id, name, key: teacherKey(name) }));
+return Promise.resolve(teacherList);
+}
+} catch (err) { /* повреждённая копия — скачаем заново */ }
+if (!teacherListLoad) {
+teacherListLoad = publicApi('/api/teachers?all=1').then(d => {
+const list = d.teachers || [];
+writeLocal(TEACHERS_KEY, JSON.stringify({ at: Date.now(), list }));
+teacherList = list.map(([id, name]) => ({ id, name, key: teacherKey(name) }));
+return teacherList;
+}).finally(() => { teacherListLoad = null; });
+}
+return teacherListLoad;
 }
 async function searchTeachers(q) {
 prepQuery = q;
+prepError = null;
 clearTimeout(prepTimer);
-if (q.trim().length < 2) { prepResults = []; renderPrepResults(); return; }
-prepTimer = setTimeout(async () => {
-try {
-const lq = q.trim().toLowerCase();
-prepResults = ((await publicApi('/api/teachers?q=' + encodeURIComponent(q.trim()))).teachers || [])
-.sort((a, b) => (b.name.toLowerCase().startsWith(lq) ? 1 : 0) - (a.name.toLowerCase().startsWith(lq) ? 1 : 0));
+const lq = teacherKey(q);
+if (lq.length < 2) { prepResults = []; renderPrepResults(); return; }
+let list = teacherList;
+if (!list) {
+const loading = loadTeacherList();
+prepResults = []; renderPrepResults();   // покажет «Загружаем список…»
+try { list = await loading; } catch (err) { list = null; }
 }
+if (q !== prepQuery) return;
+if (list) {
+prepResults = list.filter(t => t.key.includes(lq))
+.sort((a, b) => (b.key.startsWith(lq) ? 1 : 0) - (a.key.startsWith(lq) ? 1 : 0) || a.name.localeCompare(b.name, 'ru'))
+.slice(0, 12);
+renderPrepResults();
+return;
+}
+prepTimer = setTimeout(async () => {
+try { prepResults = (await publicApi('/api/teachers?q=' + encodeURIComponent(q.trim()))).teachers || []; prepError = null; }
 catch (err) { prepResults = []; prepError = err.message; }
 if (q === prepQuery) renderPrepResults();
 }, 250);
@@ -2340,17 +2416,27 @@ return;
 }
 box.innerHTML = prepResults.length
 ? prepResults.map(t => `<button class="plus-plan" data-act="prep" data-id="${t.id}"><span><b>${escapeHtml(t.name)}</b></span><em>›</em></button>`).join('')
-: `<p class="plus-note">${prepError ? '⚠️ ' + escapeHtml(prepError) : 'Никого не нашли — попробуй только фамилию.'}</p>`;
+: `<p class="plus-note">${prepError ? '⚠️ ' + escapeHtml(prepError) : (!teacherList && teacherListLoad ? 'Загружаем список преподавателей…' : 'Никого не нашли — попробуй только фамилию.')}</p>`;
 }
+const teacherCache = {};   // id → { at, data }: повторное открытие за 5 минут — мгновенно
+let prepView = false, prepLoadError = null, prepToken = 0;
 async function loadTeacher(id) {
-prepLoading = true; prepError = null; prepData = null;
+const token = ++prepToken;
+prepView = true; prepLoadError = null;
+const hit = teacherCache[id];
+prepData = hit ? hit.data : null;
+prepLoading = !prepData;
 renderSheet();
+if (hit && Date.now() - hit.at < 5 * 60000) { prepLoading = false; return; }
 try {
-prepData = await publicApi('/api/teacher?id=' + encodeURIComponent(id));
-const recent = readRecentPreps().filter(t => String(t.id) !== String(prepData.id));
-recent.unshift({ id: prepData.id, name: prepData.name });
+const data = await publicApi('/api/teacher?id=' + encodeURIComponent(id));
+if (token !== prepToken) return;
+if (!data.error) teacherCache[id] = { at: Date.now(), data };
+prepData = data;
+const recent = readRecentPreps().filter(t => String(t.id) !== String(data.id));
+recent.unshift({ id: data.id, name: data.name });
 writeLocal('stgau-recent-prep', JSON.stringify(recent.slice(0, 5)));
-} catch (err) { prepError = err.message; }
+} catch (err) { if (token !== prepToken) return; if (!prepData) prepLoadError = err.message; }
 prepLoading = false;
 if (isPlusOpen && sheetMode === 'prep') renderSheet();
 }
@@ -2371,10 +2457,11 @@ ${escapeHtml(l.subj || 'Пара')}
 }
 function renderPrepSheet() {
 let html = '';
-if (prepData || prepLoading || (prepError && !prepQuery)) {
+if (prepView) {
 html += `<button class="map-btn plus-wide" data-act="prep-back">← Другой преподаватель</button>`;
 if (prepLoading) html += `<p class="plus-note">Загружаем расписание…</p>`;
-else if (prepError) html += `<p class="plus-note">⚠️ ${escapeHtml(prepError)}</p>`;
+else if (prepLoadError || !prepData) html += `<p class="plus-note">⚠️ ${escapeHtml(prepLoadError || 'Не удалось загрузить расписание')}</p>`;
+else if (prepData.error) html += `<h3 class="prep-name">${escapeHtml(prepData.name)}</h3><p class="plus-note">⚠️ ${escapeHtml(prepData.error)}</p>`;
 else {
 const today = mskDay(), hm = mskHm();
 const todays = prepData.lessons.filter(l => l.date === today);
@@ -2382,12 +2469,12 @@ const st = roomState(todays, hm);
 const later = prepData.lessons.find(l => l.date > today);
 const where = (l) => { const r = findRoomByText(l.room); return r ? l.room : (l.aud || 'аудитория не указана'); };
 let status;
-if (st.busy) status = `<div class="room-status busy">🔴 Сейчас на паре до ${escapeHtml(st.until)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
-else if (st.lesson) status = `<div class="room-status free">🟢 Сейчас свободен · следующая пара в ${escapeHtml(st.lesson.start)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
+if (st.busy) status = `<div class="room-status busy">${dot('busy')}Сейчас на паре до ${escapeHtml(st.until)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
+else if (st.lesson) status = `<div class="room-status free">${dot('free')}Сейчас свободен · следующая пара в ${escapeHtml(st.lesson.start)}<small>📍 ${escapeHtml(where(st.lesson))} · ${escapeHtml(st.lesson.subj)}</small></div>`;
 else status = `<div class="room-status">Сегодня пар больше нет${later ? `<small>Ближайшая: ${escapeHtml(whenLabel(later))} · 📍 ${escapeHtml(where(later))}</small>` : '<small>На две недели вперёд пар нет</small>'}</div>`;
 const target = st.lesson && findRoomByText(st.lesson.room) ? st.lesson : null;
 html += `<h3 class="prep-name">${escapeHtml(prepData.name)}</h3>${status}`;
-if (target) html += `<button class="map-btn plus-wide" data-act="room" data-room-text="${escapeHtml(target.room)}">🚶 Маршрут до ${escapeHtml(target.room)}</button>`;
+if (target) html += `<button class="map-btn plus-wide" data-act="room" data-room-text="${escapeHtml(target.room)}">${ic('walk')}Маршрут до ${escapeHtml(target.room)}</button>`;
 const days = [...new Set(prepData.lessons.map(l => l.date))].filter(d => d >= today);
 html += days.map(day => {
 const d = new Date(day + 'T12:00:00Z');
@@ -2468,7 +2555,7 @@ catch (err) { window.prompt('Скопируй ссылку:', text); }
 function extraAction(el) {
 const act = el.dataset.act;
 if (act === 'prep') { haptic('light'); if (el.dataset.id) { if (!isPlusOpen || sheetMode !== 'prep') openSheet('prep'); loadTeacher(el.dataset.id); } else openPrep(); return true; }
-if (act === 'prep-back') { prepData = null; prepError = null; renderSheet(); return true; }
+if (act === 'prep-back') { prepView = false; prepToken++; prepData = null; prepLoadError = null; renderSheet(); return true; }
 if (act === 'free') { haptic('light'); openFree(el.dataset.unit); return true; }
 if (act === 'report-kind') { reportKind = el.dataset.kind; plusBody.querySelectorAll('[data-act="report-kind"]').forEach(b => b.classList.toggle('on', b === el)); return true; }
 if (act === 'report-send') { sendReport(el); return true; }
@@ -2606,6 +2693,7 @@ else if (hash === '#search') { if (isPlusOpen) closePlus(true); setTimeout(() =>
 else if (hash === '#last') { const last = readRecent()[0]; const r = last && findRoomByText(last); if (r) { if (isPlusOpen) closePlus(true); selectRoom(r.id); } }
 }
 window.__stgauOpen = openHash;
+setTimeout(() => { if (navigator.onLine !== false && !readLocal(TEACHERS_KEY)) loadTeacherList().catch(() => {}); }, 6000);
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
 navigator.serviceWorker.register('sw.js').catch(() => { /* нет поддержки — работаем как раньше */ });
 }
