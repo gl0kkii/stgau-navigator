@@ -11,7 +11,7 @@
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v6';
+const CACHE = 'stgau-nav-v7';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -101,7 +101,11 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname.startsWith('/api/')) return;   // запросы к серверу Студент+ — мимо кэша
 
     if (request.mode === 'navigate') {
-        event.respondWith(networkFirst(request, url.pathname.endsWith('app.html') ? APP : PAGE));
+        // Перехватываем только запускатор и навигатор. Политика, страница Android и APK идут напрямую,
+        // иначе их ответ попадёт в кэш запускатора и подменит следующую открытую страницу.
+        const file = url.pathname.split('/').pop();
+        if (file === 'app.html') event.respondWith(networkFirst(request, APP));
+        else if (file === '' || file === 'index.html') event.respondWith(networkFirst(request, PAGE));
     } else if (url.origin === self.location.origin && url.pathname.endsWith('app.html')) {
         event.respondWith(networkFirst(request, APP));
     } else if (url.origin === self.location.origin || url.hostname === 'telegram.org') {
