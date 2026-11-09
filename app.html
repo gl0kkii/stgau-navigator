@@ -556,7 +556,8 @@ transition: transform 0.35s var(--ios-spring), background 0.2s ease;
 .room-chip.on { background: #fff; color: var(--bg-main); }
 .free-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
 .free-room { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 9px 10px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(48, 209, 88, 0.1); color: #fff; font: inherit; text-align: left; cursor: pointer; }
-.free-room b { font-size: 15px; }
+.free-room { min-width: 0; }
+.free-room b { font-size: 15px; max-width: 100%; overflow-wrap: anywhere; }
 .free-room small { font-size: 11px; color: var(--ios-label-2); }
 .free-room.is-unknown { opacity: 0.55; cursor: default; }
 .free-room:active { transform: scale(0.96); }
@@ -954,7 +955,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel foot-app" href="https://gl0kkii.github.io/stgau-navigator/android.html" onclick="openUrl(this.href); return false;" hidden><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5M10.5 18h3"/></svg>Приложение для Android</a><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 09.11.2026 10:45</span></p>
+    <p class="page-foot"><a class="foot-channel foot-app" href="https://gl0kkii.github.io/stgau-navigator/android.html" onclick="openUrl(this.href); return false;" hidden><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5M10.5 18h3"/></svg>Приложение для Android</a><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 09.11.2026 11:34</span></p>
 
     <button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button>
 
