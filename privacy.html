@@ -11,9 +11,23 @@
         h2 { font-size: 18px; margin-top: 28px; }
         p, li { color: rgba(235, 235, 245, 0.8); }
         a { color: #fff; }
+        .close-bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: flex-end; padding: 10px 16px; background: rgba(9, 10, 15, 0.92); }
+        .close-bar[hidden] { display: none; }
+        .close-btn { height: 40px; padding: 0 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.1); color: #fff; font: inherit; font-size: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
+<div class="close-bar" id="closeBar" hidden><button class="close-btn" type="button" id="closeBtn">✕ Закрыть</button></div>
+<script>
+    // В приложении для Android страница открывается поверх навигатора — даём вернуться назад
+    if (window.StgauApp) {
+        document.getElementById('closeBar').hidden = false;
+        document.getElementById('closeBtn').onclick = function () {
+            if (history.length > 1) history.back();
+            else location.replace('https://gl0kkii.github.io/stgau-navigator/');
+        };
+    }
+</script>
 <main>
     <h1>Политика конфиденциальности приложения «Навигатор СтГАУ»</h1>
     <p>Дата вступления в силу: 3 ноября 2026 года.</p>
