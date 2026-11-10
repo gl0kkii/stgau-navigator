@@ -11,7 +11,15 @@
         Если за 10 секунд навигатор не загрузился — предлагаем «Подключить зеркало»
         (с GitHub на зеркало Cloudflare и наоборот). Переход только по нажатию.
         Ссылки вида #room=… и данные Telegram при переходе сохраняются.
+
+        Скорость:
+        • сервер Студент+ и скрипт Telegram начинаем подключать сразу, пока качается навигатор;
+        • навигатор спрашиваем «с проверкой»: если он не менялся, сервер отвечает коротким «не менялось»
+          вместо всего файла;
+        • там, где нет офлайн-копии sw.js (Telegram на iPhone и на компьютере), навигатор хранится
+          в памяти телефона и открывается сразу, а новую версию проверяет сам навигатор уже после запуска.
     -->
+    <link rel="preconnect" href="https://stgau-bot.vkyyfwr6w6.workers.dev" crossorigin>
     <style>
         html, body { margin: 0; height: 100%; background: #090a0f; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif; }
         .boot { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 24px; text-align: center; background: radial-gradient(circle at 50% 10%, #161922 0%, #090a0f 80%); }
@@ -42,6 +50,10 @@
             var MAIN = 'https://gl0kkii.github.io/stgau-navigator/';
             var MIRROR = 'https://stgau-bot.vkyyfwr6w6.workers.dev/app/';
             var TIMEOUT = 10000;
+            var COPY_KEY = 'stgau-app-copy';
+            var COPY_AT_KEY = 'stgau-app-copy-at';         // когда копию последний раз сверяли с сервером
+            var COPY_TRIES_KEY = 'stgau-app-copy-tries';   // сколько запусков подряд копия «не завелась»
+            var COPY_MAX_AGE = 14 * 86400000;
 
             var onMirror = location.hostname.indexOf('workers.dev') > -1;
             var other = onMirror ? MAIN : MIRROR;
@@ -49,6 +61,53 @@
             var offer = document.getElementById('offer');
             var alt = document.getElementById('alt');
             var done = false;
+            var timer = null;
+
+            // Настоящий навигатор, а не страница ошибки или оборванная загрузка
+            function looksOk(text) {
+                return !!text && text.length > 20000 && text.indexOf('Навигатор СтГАУ') > -1 && text.indexOf('id="plusCard"') > -1 && /<\/html>\s*$/.test(text);
+            }
+
+            // Показываем навигатор на этой же странице: адрес и hash не меняются
+            function show(text) {
+                done = true;
+                clearTimeout(timer);
+                document.open();
+                document.write(text);
+                document.close();
+            }
+
+            // Внутри Telegram навигатору нужен скрипт Telegram — начинаем качать его заранее
+            try {
+                if (location.hash.indexOf('tgWebApp') > -1 || window.TelegramWebviewProxy) {
+                    var pre = document.createElement('link');
+                    pre.rel = 'preload';
+                    pre.as = 'script';
+                    pre.href = 'https://telegram.org/js/telegram-web-app.js';
+                    document.head.appendChild(pre);
+                }
+            } catch (err) { /* не получилось — скрипт загрузится как обычно */ }
+
+            // Копию храним, только если этот навигатор умеет сам проверять обновления (в нём есть имя ключа копии) —
+            // иначе старая версия осталась бы на телефоне навсегда
+            function usable(text) { return looksOk(text) && text.indexOf(COPY_KEY) > -1; }
+
+            // Офлайн-копии sw.js здесь не бывает → открываем сохранённую в памяти телефона, не дожидаясь сети.
+            // Страховки: копию давно не сверяли с сервером (14 дней) или она два запуска подряд не дошла
+            // до конца своего скрипта (счётчик обнуляет сам навигатор) — тогда качаем из сети, как раньше.
+            var noWorker = !('serviceWorker' in navigator);
+            if (noWorker) {
+                try {
+                    var copy = localStorage.getItem(COPY_KEY);
+                    var age = Date.now() - (Number(localStorage.getItem(COPY_AT_KEY)) || 0);
+                    var tries = Number(localStorage.getItem(COPY_TRIES_KEY)) || 0;
+                    if (usable(copy) && age < COPY_MAX_AGE && tries < 2) {
+                        localStorage.setItem(COPY_TRIES_KEY, String(tries + 1));
+                        sessionStorage.setItem('stgau-boot', 'copy');
+                        return show(copy);
+                    }
+                } catch (err) { /* хранилище недоступно — качаем из сети */ }
+            }
 
             // На зеркале предлагаем обратное — вернуться на основной сервер
             if (onMirror) alt.textContent = 'Открыть основной сервер';
@@ -72,31 +131,50 @@
                 timer = setTimeout(function () { showOffer('Всё ещё грузится'); }, TIMEOUT);
             };
 
-            var timer = setTimeout(function () { showOffer('Долго грузится?'); }, TIMEOUT);
+            timer = setTimeout(function () { showOffer('Долго грузится?'); }, TIMEOUT);
 
-            var xhr = new XMLHttpRequest();
-            // Метка времени — чтобы браузер не подсовывал свою старую копию (в Telegram на iPhone нет офлайн-кэша)
-            xhr.open('GET', 'app.html?v=' + Date.now(), true);
-            xhr.onload = function () {
+            function onText(status, text) {
                 if (done) return;
-                if (xhr.status !== 200 || xhr.responseText.indexOf('Навигатор СтГАУ') < 0) {
+                if (status !== 200 || !looksOk(text)) {
                     clearTimeout(timer);
                     note.textContent = 'Сервер ответил ошибкой.';
                     return showOffer('Не получилось загрузить');
                 }
-                done = true;
-                clearTimeout(timer);
-                // Показываем навигатор на этой же странице: адрес и hash не меняются
-                document.open();
-                document.write(xhr.responseText);
-                document.close();
-            };
-            xhr.onerror = function () {
+                if (noWorker && usable(text)) {
+                    try {
+                        localStorage.setItem(COPY_KEY, text);
+                        localStorage.setItem(COPY_AT_KEY, String(Date.now()));
+                        localStorage.setItem(COPY_TRIES_KEY, '0');
+                    } catch (err) { /* нет места — откроем из сети и в следующий раз */ }
+                }
+                // Этот запуск — из сети: пометка «открыто из копии» от прошлого неудачного запуска больше не нужна
+                try { sessionStorage.removeItem('stgau-boot'); } catch (err) { /* хранилище недоступно */ }
+                show(text);
+            }
+            function onFail() {
+                if (done) return;
                 clearTimeout(timer);
                 note.textContent = 'Сервер не отвечает.';
                 showOffer('Не получилось загрузить');
-            };
-            xhr.send();
+            }
+
+            // Старый способ: метка времени в адресе, чтобы браузер не подсунул свою старую копию
+            function loadOldWay() {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'app.html?v=' + Date.now(), true);
+                xhr.onload = function () { onText(xhr.status, xhr.responseText); };
+                xhr.onerror = onFail;
+                xhr.send();
+            }
+
+            // Новый способ: браузер сам переспрашивает сервер («no-cache») и, если файл не менялся,
+            // получает короткий ответ вместо всего навигатора. Старые браузеры так не умеют — им старый способ.
+            var canRevalidate = false;
+            try { canRevalidate = typeof fetch === 'function' && typeof Request === 'function' && 'cache' in Request.prototype; } catch (err) { /* старый браузер */ }
+            if (!canRevalidate) return loadOldWay();
+            fetch('app.html', { cache: 'no-cache' })
+                .then(function (res) { return res.text().then(function (text) { onText(res.status, text); }); })
+                .catch(function () { if (!done) loadOldWay(); });
         })();
     </script>
 </body>
