@@ -112,7 +112,13 @@
                     if (usable(copy) && age < COPY_MAX_AGE && tries < 2) {
                         localStorage.setItem(COPY_TRIES_KEY, String(tries + 1));
                         sessionStorage.setItem('stgau-boot', 'copy');
-                        return show(copy);
+                        // Заменять страницу можно только когда браузер дочитал её до конца: пока она читается,
+                        // document.open() не срабатывает, и навигатор дописался бы ПОД экран загрузки
+                        done = true;
+                        var showCopy = function () { setTimeout(function () { show(copy); }, 0); };
+                        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showCopy);
+                        else showCopy();
+                        return;
                     }
                 } catch (err) { /* хранилище недоступно — качаем из сети */ }
             }
