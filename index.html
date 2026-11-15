@@ -58,9 +58,14 @@
             var MAIN = 'https://gl0kkii.github.io/stgau-navigator/';
             var MIRROR = 'https://stgau-bot.vkyyfwr6w6.workers.dev/app/';
             var TIMEOUT = 10000;
-            var COPY_KEY = 'stgau-app-copy';
-            var COPY_AT_KEY = 'stgau-app-copy-at';         // когда копию последний раз сверяли с сервером
-            var COPY_TRIES_KEY = 'stgau-app-copy-tries';   // сколько запусков подряд копия «не завелась»
+            var COPY_KEY = 'stgau-app-copy';               // метка внутри навигатора: по ней проверяем, что копия целая
+            // Приложение Android до 2.0 (в User-Agent «StgauNavApp/1.x») получает прежний дизайн — новый
+            // приходит вместе с обновлением 2.0. Копия для него хранится отдельно, чтобы версии не смешивались.
+            var CLASSIC = /StgauNavApp\/1\./.test(navigator.userAgent);
+            var APP = CLASSIC ? 'app-classic.html' : 'app.html';
+            var STORE = CLASSIC ? 'stgau-app-copy-classic' : COPY_KEY;
+            var COPY_AT_KEY = STORE + '-at';               // когда копию последний раз сверяли с сервером
+            var COPY_TRIES_KEY = STORE + '-tries';         // сколько запусков подряд копия «не завелась»
             var COPY_MAX_AGE = 14 * 86400000;
 
             var onMirror = location.hostname.indexOf('workers.dev') > -1;
@@ -106,7 +111,7 @@
             var noWorker = !('serviceWorker' in navigator);
             if (noWorker) {
                 try {
-                    var copy = localStorage.getItem(COPY_KEY);
+                    var copy = localStorage.getItem(STORE);
                     var age = Date.now() - (Number(localStorage.getItem(COPY_AT_KEY)) || 0);
                     var tries = Number(localStorage.getItem(COPY_TRIES_KEY)) || 0;
                     if (usable(copy) && age < COPY_MAX_AGE && tries < 2) {
@@ -156,7 +161,7 @@
                 }
                 if (noWorker && usable(text)) {
                     try {
-                        localStorage.setItem(COPY_KEY, text);
+                        localStorage.setItem(STORE, text);
                         localStorage.setItem(COPY_AT_KEY, String(Date.now()));
                         localStorage.setItem(COPY_TRIES_KEY, '0');
                     } catch (err) { /* нет места — откроем из сети и в следующий раз */ }
@@ -175,7 +180,7 @@
             // Старый способ: метка времени в адресе, чтобы браузер не подсунул свою старую копию
             function loadOldWay() {
                 var xhr = new XMLHttpRequest();
-                xhr.open('GET', 'app.html?v=' + Date.now(), true);
+                xhr.open('GET', APP + '?v=' + Date.now(), true);
                 xhr.onload = function () { onText(xhr.status, xhr.responseText); };
                 xhr.onerror = onFail;
                 xhr.send();
@@ -186,7 +191,7 @@
             var canRevalidate = false;
             try { canRevalidate = typeof fetch === 'function' && typeof Request === 'function' && 'cache' in Request.prototype; } catch (err) { /* старый браузер */ }
             if (!canRevalidate) return loadOldWay();
-            fetch('app.html', { cache: 'no-cache' })
+            fetch(APP, { cache: 'no-cache' })
                 .then(function (res) { return res.text().then(function (text) { onText(res.status, text); }); })
                 .catch(function () { if (!done) loadOldWay(); });
         })();
