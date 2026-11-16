@@ -1118,7 +1118,7 @@ background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 0%), rgba(2
 -webkit-backdrop-filter: none; backdrop-filter: none; background: linear-gradient(180deg, rgba(40,42,52,.94), rgba(26,28,36,.94)); }
 body.beta .plus-card { border-radius: 26px; width: auto; max-width: 488px; margin: 0 16px; box-sizing: border-box; }
 @media (min-width: 521px) { body.beta .plus-card { margin: 0 auto; } }
-.b-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 520px; margin: 14px auto 4px; padding: 0 16px; }
+.b-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 520px; margin: 14px auto 4px; padding: 0 16px; }
 .b-q { border-radius: 20px; padding: 14px 4px 11px; display: flex; flex-direction: column; align-items: center; gap: 7px; color: #fff; font: 500 12px/1.1 inherit; font-family: inherit; cursor: pointer;
 transition: transform .12s var(--b-ease); }
 .b-q:active { transform: scale(.96); }
@@ -1145,7 +1145,8 @@ background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06)
 .b-tr { display: flex; align-items: center; gap: 8px; color: var(--b-l3); font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .b-tr::after { content: ""; width: 7px; height: 7px; border: solid var(--b-l3); border-width: 1.8px 1.8px 0 0; transform: rotate(45deg); }
 .b-tr .on { color: #0a84ff; font-weight: 600; }
-.b-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.b-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 359px) { .b-quick { gap: 6px; padding: 0 12px; } .b-q small { font-size: 10px; } .b-tiles { gap: 8px; } .b-tile { padding: 12px 11px 10px; } .b-bars { gap: 3px; } .b-bars span { flex: 1 1 0; min-width: 0; max-width: 16px; } }
 .b-tile { border-radius: 22px; padding: 14px 14px 12px; min-height: 148px; display: flex; flex-direction: column; cursor: pointer;
 transition: transform .12s var(--b-ease); }
 .b-tile:active { transform: scale(.97); }
@@ -1543,7 +1544,7 @@ body.wow-intro > * { animation-play-state: running !important; }
         </div>
     </div>
 
-    <p class="page-foot"><a class="foot-channel foot-app" href="https://gl0kkii.github.io/stgau-navigator/android.html" onclick="openUrl(this.href); return false;" hidden><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5M10.5 18h3"/></svg>Приложение для Android</a><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 15.11.2026 22:52</span><br><button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button></p>
+    <p class="page-foot"><a class="foot-channel foot-app" href="https://gl0kkii.github.io/stgau-navigator/android.html" onclick="openUrl(this.href); return false;" hidden><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M12 7.5v6M9.5 11l2.5 2.5 2.5-2.5M10.5 18h3"/></svg>Приложение для Android</a><a class="foot-channel" href="https://t.me/stgau_navigator" onclick="openUrl(this.href); return false;"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l6.5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M17 9.2a4 4 0 0 1 0 5.6"/></svg>Новости навигатора — канал @stgau_navigator</a><br><a href="#" onclick="openTour(0); return false;">Экскурсия по кампусу</a> · <a href="https://gl0kkii.github.io/stgau-navigator/privacy.html" onclick="openUrl(this.href); return false;">Политика конфиденциальности</a><span class="build-id"> · сборка 16.11.2026 20:27</span><br><button class="optimize-btn" id="optimizeBtn" onclick="toggleOptimization()">Оптимизация</button></p>
 
 
     <!-- Нижняя панель навигации в стиле iOS 26: стеклянная капсула, линза под выбранным пунктом, поиск — отдельным кругом -->

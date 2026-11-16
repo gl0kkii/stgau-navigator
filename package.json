@@ -1,0 +1,10 @@
+{
+  "name": "stgau-navigator-tests",
+  "private": true,
+  "scripts": {
+    "test": "playwright test -c playwright.config.cjs --trace off"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
