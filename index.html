@@ -116,13 +116,34 @@
                     var tries = Number(localStorage.getItem(COPY_TRIES_KEY)) || 0;
                     if (usable(copy) && age < COPY_MAX_AGE && tries < 2) {
                         localStorage.setItem(COPY_TRIES_KEY, String(tries + 1));
-                        sessionStorage.setItem('stgau-boot', 'copy');
                         // Заменять страницу можно только когда браузер дочитал её до конца: пока она читается,
                         // document.open() не срабатывает, и навигатор дописался бы ПОД экран загрузки
                         done = true;
-                        var showCopy = function () { setTimeout(function () { show(copy); }, 0); };
-                        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showCopy);
-                        else showCopy();
+                        var showCopy = function () { setTimeout(function () { try { sessionStorage.setItem('stgau-boot', 'copy'); } catch (err) {} show(copy); }, 0); };
+                        var whenReady = function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); };
+                        // Копию не сверяли больше 10 минут — даём серверу 1,5 с прислать свежую версию: иначе новая
+                        // версия (например, заставка) появлялась бы в Telegram только со второго запуска.
+                        // Не успел или ошибка — открываем копию, как раньше; она обновится в фоне.
+                        if (age > 600000 && typeof fetch === 'function') {
+                            var settled = false;
+                            var fallback = setTimeout(function () { if (!settled) { settled = true; whenReady(showCopy); } }, 1500);
+                            var useCopy = function () { if (!settled) { settled = true; clearTimeout(fallback); whenReady(showCopy); } };
+                            fetch(APP, { cache: 'no-cache' }).then(function (res) {
+                                return res.text().then(function (text) {
+                                    if (settled) return;
+                                    if (res.status !== 200 || !usable(text)) return useCopy();
+                                    settled = true; clearTimeout(fallback);
+                                    try {
+                                        if (text !== copy) localStorage.setItem(STORE, text);
+                                        localStorage.setItem(COPY_AT_KEY, String(Date.now()));
+                                        localStorage.setItem(COPY_TRIES_KEY, '0');
+                                    } catch (err) { /* нет места — всё равно показываем свежую */ }
+                                    whenReady(function () { show(text); });
+                                });
+                            }).catch(useCopy);
+                            return;
+                        }
+                        whenReady(showCopy);
                         return;
                     }
                 } catch (err) { /* хранилище недоступно — качаем из сети */ }

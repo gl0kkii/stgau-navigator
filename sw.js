@@ -11,7 +11,7 @@
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v8';
+const CACHE = 'stgau-nav-v9';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -26,7 +26,7 @@ async function clean(res) {
 self.addEventListener('install', (event) => {
     event.waitUntil((async () => {
         const cache = await caches.open(CACHE);
-        await Promise.all(['./', PAGE, APP, './watermark.png'].map(async (url) => {
+        await Promise.all(['./', PAGE, APP, './watermark.png', './intro.mp4'].map(async (url) => {
             const res = await fetch(url, { cache: 'no-cache' });
             if (res.ok) await cache.put(url, await clean(res));
         }));
@@ -99,7 +99,7 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/')) return;   // запросы к серверу Студент+ — мимо кэша
-    if (url.pathname.endsWith('.mp4')) return;      // видео заставки: Safari просит его кусками (Range), кэш этого не умеет
+    if (request.headers.has('range')) return;       // видео кусками (Range) кэш не отдаёт; заставка качает видео целиком через fetch
 
     if (request.mode === 'navigate') {
         // Перехватываем только запускатор и навигатор. Политика, страница Android и APK идут напрямую,
