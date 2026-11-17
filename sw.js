@@ -11,7 +11,7 @@
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v7';
+const CACHE = 'stgau-nav-v8';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -99,6 +99,7 @@ self.addEventListener('fetch', (event) => {
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/')) return;   // запросы к серверу Студент+ — мимо кэша
+    if (url.pathname.endsWith('.mp4')) return;      // видео заставки: Safari просит его кусками (Range), кэш этого не умеет
 
     if (request.mode === 'navigate') {
         // Перехватываем только запускатор и навигатор. Политика, страница Android и APK идут напрямую,
