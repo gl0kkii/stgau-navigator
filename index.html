@@ -121,10 +121,10 @@
                         done = true;
                         var showCopy = function () { setTimeout(function () { try { sessionStorage.setItem('stgau-boot', 'copy'); } catch (err) {} show(copy); }, 0); };
                         var whenReady = function (fn) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); };
-                        // Копию не сверяли больше 10 минут — даём серверу 1,5 с прислать свежую версию: иначе новая
+                        // Каждый запуск даём серверу 1,5 с прислать свежую версию (обычно короткий ответ «не изменилось»): иначе новая
                         // версия (например, заставка) появлялась бы в Telegram только со второго запуска.
                         // Не успел или ошибка — открываем копию, как раньше; она обновится в фоне.
-                        if (age > 600000 && typeof fetch === 'function') {
+                        if (typeof fetch === 'function') {
                             var settled = false;
                             var fallback = setTimeout(function () { if (!settled) { settled = true; whenReady(showCopy); } }, 1500);
                             var useCopy = function () { if (!settled) { settled = true; clearTimeout(fallback); whenReady(showCopy); } };
