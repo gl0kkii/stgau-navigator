@@ -11,7 +11,7 @@
    Чтобы принудительно обновить кэш у всех — поменяйте номер версии.
    ===================================================================== */
 
-const CACHE = 'stgau-nav-v9';
+const CACHE = 'stgau-nav-v10';
 const PAGE = './index.html';   // запускатор (лёгкий)
 const APP = './app.html';      // сам навигатор
 const NETWORK_TIMEOUT = 3500;
@@ -60,9 +60,12 @@ async function networkFirst(request, key) {
     const network = fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' })
         .then(clean)
         .then(res => { if (res.ok) cache.put(key, res.clone()); return res; });
-    // Копия уже есть — открываем мгновенно. Если на сервере новее — сообщаем странице
+    // Копия уже есть: даём серверу 1,5 с прислать свежую версию (обычно это короткий ответ «не изменилось»),
+    // не успел — открываем копию, а когда сеть ответит и там новее — сообщаем странице
     const ready = await clean((await cache.match(key)) || (key === PAGE && await cache.match('./')));
     if (ready) {
+        const fresh = await Promise.race([network.then(r => (r.ok ? r : null), () => null), new Promise(r => setTimeout(() => r(null), 1500))]);
+        if (fresh) return fresh;
         const old = ready.clone();
         network.then(async (res) => {
             if (!res.ok || key !== APP) return;
